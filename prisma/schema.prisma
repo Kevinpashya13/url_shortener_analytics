@@ -10,3 +10,15 @@ generator client {
 datasource db {
   provider = "postgresql"
 }
+
+model Url {
+  id Int @id @default(autoincrement())
+  shortCode String @unique
+  originalUrl String
+  customAlias Boolean @default(false)
+  createdAt DateTime @default(now())
+  expiredAt DateTime?
+  clickCount Int @default(0)
+
+  @@map("urls")
+}

@@ -143,3 +143,8 @@ vite.config.ts.timestamp-*
 .vite/
 
 /generated/prisma
+
+# AI Agent Skills
+.agents/
+.claude/
+.windsurf/

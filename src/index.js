@@ -4,7 +4,11 @@ const prisma = require('./config/prisma');
 const { redisClient, connectRedis } = require('./config/redis');
 
 const app = express();
+const shortenRoutes = require('./routes/shorten');
+const redirectRoutes = require('./routes/redirect');
 app.use(express.json());
+app.use('/', shortenRoutes);
+app.use('/', redirectRoutes);
 
 const PORT = process.env.PORT || 3000;
 
