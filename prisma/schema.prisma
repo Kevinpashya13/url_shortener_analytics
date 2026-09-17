@@ -12,13 +12,31 @@ datasource db {
 }
 
 model Url {
-  id Int @id @default(autoincrement())
-  shortCode String @unique
-  originalUrl String
-  customAlias Boolean @default(false)
-  createdAt DateTime @default(now())
-  expiredAt DateTime?
-  clickCount Int @default(0)
+  id           Int         @id @default(autoincrement())
+  shortCode    String      @unique
+  originalUrl  String
+  customAlias  Boolean     @default(false)
+  createdAt    DateTime    @default(now())
+  expiredAt    DateTime?
+  clickCount   Int         @default(0)
+  clickLogs    ClickLog[]
 
   @@map("urls")
+}
+
+model ClickLog {
+  id          Int      @id @default(autoincrement())
+  urlId       Int
+  url         Url      @relation(fields: [urlId], references: [id])
+  clickedAt   DateTime @default(now())
+  ipAddress   String?
+  userAgent   String?
+  referrer    String?
+  deviceType  String?
+  browser     String?
+  country     String?
+
+  @@map("click_logs")
+  @@index([urlId])
+  @@index([clickedAt])
 }

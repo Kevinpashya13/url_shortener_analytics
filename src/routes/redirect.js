@@ -1,6 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const { getOriginalUrl } = require('../services/urlService');
+const { logClick } = require('../services/analyticsService');
+const prisma = require('../config/prisma');
 
 router.get('/:code', async (req, res) => {
   const { code } = req.params;
@@ -16,6 +18,7 @@ router.get('/:code', async (req, res) => {
   }
 
   res.redirect(302, url.originalUrl);
+  logClick(url.id, req);
 });
 
 module.exports = router;

@@ -40,6 +40,7 @@ async function getOriginalUrl(shortCode) {
   if (url.expiredAt && new Date() > url.expiredAt) return null;
 
   await setCachedUrl(shortCode, {
+    id: url.id,
     originalUrl: url.originalUrl,
     expiredAt: url.expiredAt,
   });
