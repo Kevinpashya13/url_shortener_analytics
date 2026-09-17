@@ -148,3 +148,5 @@ vite.config.ts.timestamp-*
 .agents/
 .claude/
 .windsurf/
+
+ROADMAP.md

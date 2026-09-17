@@ -1,5 +1,6 @@
 const prisma = require('../config/prisma');
 const { encodeBase62 } = require('../utility/base62');
+const { getCachedUrl, setCachedUrl, deleteCachedUrl } = require('./cacheService');
 
 async function createShortUrl(originalUrl, customAlias = null, expiredAt = null) {
   if (customAlias) {
@@ -25,12 +26,25 @@ async function createShortUrl(originalUrl, customAlias = null, expiredAt = null)
 }
 
 async function getOriginalUrl(shortCode) {
+  const cached = await getCachedUrl(shortCode);
+  if (cached) {
+    if (cached.expiredAt && new Date() > new Date(cached.expiredAt)) {
+      return null;
+    }
+    return cached;
+  }
+
   const url = await prisma.url.findUnique({ where: { shortCode } });
 
   if (!url) return null;
   if (url.expiredAt && new Date() > url.expiredAt) return null;
 
+  await setCachedUrl(shortCode, {
+    originalUrl: url.originalUrl,
+    expiredAt: url.expiredAt,
+  });
+
   return url;
 }
 
-module.exports = { createShortUrl, getOriginalUrl };
+module.exports = { createShortUrl, getOriginalUrl, deleteCachedUrl };
