@@ -1,13 +1,16 @@
 const express = require('express');
 const router = express.Router();
 const { createShortUrl } = require('../services/urlService');
+const { shortenLimiter } = require('../middlewares/rateLimiter');
 const { validateShortenRequest } = require('../middlewares/validateUrl');
+const { optionalAuthenticate } = require('../middlewares/auth');
 
-router.post('/shorten', validateShortenRequest, async (req, res) => {
+router.post('/shorten', shortenLimiter, optionalAuthenticate, validateShortenRequest, async (req, res) => {
   const { originalUrl, customAlias, expiredAt } = req.body;
+  const userId = req.user ? req.user.userId : null;
 
   try {
-    const result = await createShortUrl(originalUrl, customAlias, expiredAt ? new Date(expiredAt) : null);
+    const result = await createShortUrl(originalUrl, customAlias, expiredAt ? new Date(expiredAt) : null, userId);
 
     res.status(201).json({
       shortUrl: `${req.protocol}://${req.get('host')}/${result.shortCode}`,
