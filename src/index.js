@@ -4,12 +4,14 @@ const prisma = require('./config/prisma');
 const { redisClient, connectRedis } = require('./config/redis');
 
 const app = express();
+const cors = require('cors');
 const shortenRoutes = require('./routes/shorten');
 const redirectRoutes = require('./routes/redirect');
 const analyticsRoutes = require('./routes/analytics');
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/user');
 app.use(express.json());
+app.use(cors({ origin: 'http://localhost:5173', credentials: true }));
 app.use('/', authRoutes);
 app.use('/', userRoutes);
 app.use('/', shortenRoutes);
