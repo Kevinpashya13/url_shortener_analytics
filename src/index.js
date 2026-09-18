@@ -6,13 +6,14 @@ const { redisClient, connectRedis } = require('./config/redis');
 const app = express();
 const shortenRoutes = require('./routes/shorten');
 const redirectRoutes = require('./routes/redirect');
+const analyticsRoutes = require('./routes/analytics');
 app.use(express.json());
 app.use('/', shortenRoutes);
+app.use('/', analyticsRoutes);
 app.use('/', redirectRoutes);
 
 const PORT = process.env.PORT || 3000;
 
-// Health check endpoint
 app.get('/health', async (req, res) => {
   const status = { server: 'ok', database: 'unknown', redis: 'unknown' };
 

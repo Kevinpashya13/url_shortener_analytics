@@ -36,4 +36,64 @@ async function logClick(urlId, req) {
   }
 }
 
-module.exports = { logClick };
+async function getAnalyticsSummary(shortCode, days = null) {
+  const url = await prisma.url.findUnique({
+    where: { shortCode },
+    include: { clickLogs: true },
+  });
+
+  if (!url) return null;
+
+  let filteredLogs = url.clickLogs;
+  if (days) {
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - days);
+    filteredLogs = url.clickLogs.filter((log) => log.clickedAt >= cutoff);
+  }
+
+  const clicksByDay = groupClicksByDay(filteredLogs);
+  const deviceBreakdown = groupByField(filteredLogs, 'deviceType');
+  const browserBreakdown = groupByField(filteredLogs, 'browser');
+  const countryBreakdown = groupByField(filteredLogs, 'country');
+  const topReferrers = groupByField(filteredLogs, 'referrer', 'direct');
+
+  return {
+    shortCode: url.shortCode,
+    originalUrl: url.originalUrl,
+    totalClicks: url.clickCount,
+    createdAt: url.createdAt,
+    clicksByDay,
+    deviceBreakdown,
+    browserBreakdown,
+    countryBreakdown,
+    topReferrers,
+  };
+}
+
+function groupClicksByDay(clickLogs) {
+  const counts = {};
+
+  for (const log of clickLogs) {
+    const date = log.clickedAt.toISOString().split('T')[0]; // "2026-09-16"
+    counts[date] = (counts[date] || 0) + 1;
+  }
+
+  return Object.entries(counts)
+    .map(([date, count]) => ({ date, count }))
+    .sort((a, b) => a.date.localeCompare(b.date));
+}
+
+function groupByField(clickLogs, field, fallbackValue = 'unknown') {
+  const counts = {};
+
+  for (const log of clickLogs) {
+    const key = log[field] || fallbackValue;
+    counts[key] = (counts[key] || 0) + 1;
+  }
+
+  return Object.entries(counts)
+    .map(([key, count]) => ({ [field === 'referrer' ? 'referrer' : field]: key, count }))
+    .sort((a, b) => b.count - a.count);
+}
+
+module.exports = { logClick, getAnalyticsSummary };
