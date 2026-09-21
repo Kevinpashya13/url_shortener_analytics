@@ -10,12 +10,15 @@ const redirectRoutes = require('./routes/redirect');
 const analyticsRoutes = require('./routes/analytics');
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/user');
+const accountRoutes = require('./routes/account');
 app.use(express.json());
 app.use(cors({ origin: 'http://localhost:5173', credentials: true }));
 app.use('/', authRoutes);
 app.use('/', userRoutes);
 app.use('/', shortenRoutes);
 app.use('/', analyticsRoutes);
+app.use('/', accountRoutes);
+
 
 const PORT = process.env.PORT || 3000;
 

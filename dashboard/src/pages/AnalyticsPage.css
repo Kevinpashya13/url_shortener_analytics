@@ -1,0 +1,165 @@
+/* AnalyticsPage.css */
+.analytics {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 40px 24px 80px;
+  font-family: 'Inter', system-ui, sans-serif;
+  color: #f0f0f5;
+}
+
+.analytics-loading {
+  text-align: center;
+  padding: 80px 24px;
+  color: #6b7280;
+}
+
+.analytics-header {
+  margin-bottom: 28px;
+}
+
+.analytics-back {
+  font-size: 0.85rem;
+  color: #6b7280;
+  text-decoration: none;
+  display: inline-block;
+  margin-bottom: 16px;
+}
+.analytics-back:hover { color: #a5b4fc; }
+
+.analytics-title {
+  font-size: 1.5rem;
+  font-weight: 800;
+  margin: 0 0 6px;
+}
+
+.analytics-code { color: #a5b4fc; }
+
+.analytics-original {
+  font-size: 0.85rem;
+  color: #6b7280;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+  margin: 0;
+}
+
+/* Stats row */
+.analytics-stats {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+
+.stat-card {
+  flex: 1;
+  min-width: 120px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 14px;
+  padding: 20px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.stat-value {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #f0f0f5;
+}
+
+.stat-label {
+  font-size: 0.78rem;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Chart cards */
+.analytics-card {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 16px;
+  padding: 24px 20px;
+  margin-bottom: 16px;
+}
+
+.analytics-card-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #e5e7eb;
+  margin: 0 0 20px;
+}
+
+/* Upgrade banner */
+.upgrade-banner {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: rgba(99, 102, 241, 0.06);
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  border-radius: 12px;
+  padding: 18px 20px;
+}
+
+.upgrade-banner-icon {
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+
+.upgrade-banner-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #e5e7eb;
+  margin: 0 0 4px;
+}
+
+.upgrade-banner-desc {
+  font-size: 0.82rem;
+  color: #6b7280;
+  margin: 0;
+}
+
+.upgrade-banner-btn {
+  margin-left: auto;
+  padding: 8px 18px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  color: #fff;
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-decoration: none;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: opacity 0.2s;
+}
+.upgrade-banner-btn:hover { opacity: 0.85; }
+
+/* Lists */
+.analytics-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.analytics-list-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 14px;
+  background: rgba(255,255,255,0.03);
+  border-radius: 8px;
+  font-size: 0.88rem;
+  color: #d1d5db;
+}
+
+.analytics-count {
+  font-weight: 700;
+  color: #a5b4fc;
+}
+

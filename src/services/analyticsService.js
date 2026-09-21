@@ -1,6 +1,7 @@
 const prisma = require('../config/prisma');
 const { UAParser } = require('ua-parser-js');
 const geoip = require('geoip-lite');
+const { getLimits } = require('../config/planLimits');
 
 async function logClick(urlId, req) {
   try {
@@ -12,6 +13,39 @@ async function logClick(urlId, req) {
     const uaResult = parser.getResult();
 
     const geo = geoip.lookup(ip);
+
+    // Check owner's monthly click tracking quota before logging
+    const url = await prisma.url.findUnique({
+      where: { id: urlId },
+      select: { userId: true, user: { select: { role: true } } },
+    });
+
+    if (url?.userId && url?.user?.role) {
+      const limits = getLimits(url.user.role);
+
+      if (limits.clicksPerMonth !== Infinity) {
+        const startOfMonth = new Date();
+        startOfMonth.setDate(1);
+        startOfMonth.setHours(0, 0, 0, 0);
+
+        // Count clicks across ALL of this user's URLs this month
+        const monthlyClicks = await prisma.clickLog.count({
+          where: {
+            url: { userId: url.userId },
+            clickedAt: { gte: startOfMonth },
+          },
+        });
+
+        if (monthlyClicks >= limits.clicksPerMonth) {
+          // Quota exceeded — don't log the click but still increment clickCount
+          await prisma.url.update({
+            where: { id: urlId },
+            data: { clickCount: { increment: 1 } },
+          });
+          return;
+        }
+      }
+    }
 
     await prisma.clickLog.create({
       data: {
@@ -34,7 +68,7 @@ async function logClick(urlId, req) {
   }
 }
 
-async function getAnalyticsSummary(shortCode, days = null) {
+async function getAnalyticsSummary(shortCode, days = null, role = 'STANDARD') {
   const url = await prisma.url.findUnique({
     where: { shortCode },
     include: { clickLogs: true },
@@ -49,23 +83,30 @@ async function getAnalyticsSummary(shortCode, days = null) {
     filteredLogs = url.clickLogs.filter((log) => log.clickedAt >= cutoff);
   }
 
-  const clicksByDay = groupClicksByDay(filteredLogs);
-  const deviceBreakdown = groupByField(filteredLogs, 'deviceType');
-  const browserBreakdown = groupByField(filteredLogs, 'browser');
-  const countryBreakdown = groupByField(filteredLogs, 'country');
-  const topReferrers = groupByField(filteredLogs, 'referrer', 'direct');
+  const limits = getLimits(role);
 
-  return {
+  const clicksByDay = groupClicksByDay(filteredLogs);
+
+  // Base analytics available to all roles
+  const summary = {
     shortCode: url.shortCode,
     originalUrl: url.originalUrl,
     totalClicks: url.clickCount,
     createdAt: url.createdAt,
+    expiredAt: url.expiredAt || null,
+    fallbackUrl: url.fallbackUrl || null,
     clicksByDay,
-    deviceBreakdown,
-    browserBreakdown,
-    countryBreakdown,
-    topReferrers,
   };
+
+  // Full analytics only for PRO, PREMIUM, ADMIN
+  if (limits.fullAnalytics) {
+    summary.deviceBreakdown = groupByField(filteredLogs, 'deviceType');
+    summary.browserBreakdown = groupByField(filteredLogs, 'browser');
+    summary.countryBreakdown = groupByField(filteredLogs, 'country');
+    summary.topReferrers = groupByField(filteredLogs, 'referrer', 'direct');
+  }
+
+  return summary;
 }
 
 function groupClicksByDay(clickLogs) {

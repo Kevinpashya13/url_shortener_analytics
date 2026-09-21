@@ -11,10 +11,18 @@ datasource db {
   provider = "postgresql"
 }
 
+enum Role {
+  STANDARD
+  PRO
+  PREMIUM
+  ADMIN
+}
+
 model User {
   id           Int         @id @default(autoincrement())
   email        String      @unique
   password     String
+  role         Role        @default(STANDARD)
   createdAt    DateTime    @default(now())
   urls         Url[]
 
@@ -26,6 +34,7 @@ model Url {
   shortCode    String      @unique
   originalUrl  String
   customAlias  Boolean     @default(false)
+  fallbackUrl  String?
   createdAt    DateTime    @default(now())
   expiredAt    DateTime?
   clickCount   Int         @default(0)

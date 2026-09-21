@@ -1,13 +1,16 @@
 const express = require('express');
 const router = express.Router();
 const { getAnalyticsSummary } = require('../services/analyticsService');
+const { authenticate } = require('../middlewares/auth');
 
-router.get('/analytics/:code', async (req, res) => {
+// GET /analytics/:code — requires login; returns role-filtered analytics
+router.get('/analytics/:code', authenticate, async (req, res) => {
   const { code } = req.params;
   const { days } = req.query;
+  const role = req.user.role || 'STANDARD';
 
   try {
-    const summary = await getAnalyticsSummary(code, days ? parseInt(days) : null);
+    const summary = await getAnalyticsSummary(code, days ? parseInt(days) : null, role);
 
     if (!summary) {
       return res.status(404).json({ error: 'Short URL not found' });
