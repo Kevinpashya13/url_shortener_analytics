@@ -25,13 +25,11 @@ async function logClick(urlId, req) {
       },
     });
 
-    // Update counter cepat di tabel urls
     await prisma.url.update({
       where: { id: urlId },
       data: { clickCount: { increment: 1 } },
     });
   } catch (err) {
-    // Sengaja gak throw error ke atas, cukup log aja
     console.error('Failed to log click:', err);
   }
 }
@@ -74,7 +72,7 @@ function groupClicksByDay(clickLogs) {
   const counts = {};
 
   for (const log of clickLogs) {
-    const date = log.clickedAt.toISOString().split('T')[0]; // "2026-09-16"
+    const date = log.clickedAt.toISOString().split('T')[0];
     counts[date] = (counts[date] || 0) + 1;
   }
 

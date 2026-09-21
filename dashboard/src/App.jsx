@@ -6,6 +6,7 @@ import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import DashboardPage from './pages/DashboardPage';
 import AnalyticsPage from './pages/AnalyticsPage';
+import LandingPage from './pages/LandingPage';
 
 function AppRoutes() {
   const { user, loading } = useAuth();
@@ -24,9 +25,7 @@ function AppRoutes() {
         <Route path="/analytics/:shortCode" element={
           <ProtectedRoute><AnalyticsPage /></ProtectedRoute>
         } />
-        <Route path="/" element={
-          <Navigate to={user ? '/dashboard' : '/login'} replace />
-        } />
+        <Route path="/" element={<LandingPage />} />
       </Routes>
     </>
   );

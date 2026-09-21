@@ -6,7 +6,7 @@ function validateShortenRequest(req, res, next) {
   }
 
   try {
-    new URL(originalUrl); // validasi format URL
+    new URL(originalUrl);
   } catch {
     return res.status(400).json({ error: 'Invalid URL format' });
   }

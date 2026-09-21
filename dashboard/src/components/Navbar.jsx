@@ -1,5 +1,6 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import './Navbar.css';
 
 export default function Navbar() {
   const { user, logout } = useAuth();
@@ -11,27 +12,45 @@ export default function Navbar() {
   };
 
   return (
-    <nav style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem', borderBottom: '1px solid #ccc', marginBottom: '1rem' }}>
-      <div>
-        <Link to="/" style={{ fontWeight: 'bold', textDecoration: 'none', fontSize: '1.2rem' }}>
+    <nav className="navbar">
+      <Link to="/" className="navbar-brand">
+        <span className="brand-icon">Made by</span>
+        <span>Kevinpashya13</span>
+      </Link>
+
+      <div className="navbar-nav">
+        <Link to="/" className="nav-pill active">
           URL Shortener
         </Link>
+        <Link to={user ? "/dashboard" : "/login"} className="nav-pill">
+          Real-Time Analytics
+        </Link>
       </div>
-      <div>
+
+      <div className="navbar-actions">
         {user ? (
-          <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-            <span>Halo, <strong>{user.email}</strong></span>
-            <Link to="/dashboard">Dashboard</Link>
-            <button onClick={handleLogout}>Logout</button>
+          <div style={{ display: 'flex', gap: '0.85rem', alignItems: 'center' }}>
+            <span className="user-badge">
+              Hello, <strong>{user.email?.split('@')[0]}</strong>
+            </span>
+            <Link to="/dashboard" className="nav-link">
+              Dashboard
+            </Link>
+            <button onClick={handleLogout} className="btn-logout">
+              Logout
+            </button>
           </div>
         ) : (
-          <div style={{ display: 'flex', gap: '1rem' }}>
-            <Link to="/login">Login</Link>
-            <Link to="/register">Register</Link>
+          <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+            <Link to="/login" className="nav-link">
+              Sign In
+            </Link>
+            <Link to="/register" className="btn-primary-nav">
+              Sign Up Free
+            </Link>
           </div>
         )}
       </div>
     </nav>
   );
 }
-

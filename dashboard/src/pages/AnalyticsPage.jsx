@@ -15,11 +15,11 @@ export default function AnalyticsPage() {
 
   return (
     <div>
-      <h2>Analytics untuk /{data.shortCode}</h2>
-      <p>Total Klik: {data.totalClicks}</p>
-      <p>URL Asli: {data.originalUrl}</p>
+      <h2>Analytics for /{data.shortCode}</h2>
+      <p>Total Clicks: {data.totalClicks}</p>
+      <p>Original URL: {data.originalUrl}</p>
 
-      <h3>Klik per Hari</h3>
+      <h3>Clicks per Day</h3>
       <ResponsiveContainer width="100%" height={300}>
         <LineChart data={data.clicksByDay}>
           <XAxis dataKey="date" />
@@ -29,7 +29,7 @@ export default function AnalyticsPage() {
         </LineChart>
       </ResponsiveContainer>
 
-      <h3>Breakdown Device</h3>
+      <h3>Device Breakdown</h3>
       <ResponsiveContainer width="100%" height={300}>
         <BarChart data={data.deviceBreakdown}>
           <XAxis dataKey="deviceType" />
@@ -42,7 +42,7 @@ export default function AnalyticsPage() {
       <h3>Top Referrers</h3>
       <ul>
         {data.topReferrers.map((r) => (
-          <li key={r.referrer}>{r.referrer}: {r.count} klik</li>
+          <li key={r.referrer}>{r.referrer}: {r.count} clicks</li>
         ))}
       </ul>
     </div>

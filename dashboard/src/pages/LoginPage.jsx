@@ -31,7 +31,7 @@ export default function LoginPage() {
         {error && <p style={{ color: 'red' }}>{error}</p>}
         <button type="submit">Login</button>
       </form>
-      <p>Belum punya akun? <Link to="/register">Daftar</Link></p>
+      <p>Don't have an account? <Link to="/register">Sign Up</Link></p>
     </div>
   );
 }

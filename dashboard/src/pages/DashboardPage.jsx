@@ -62,9 +62,9 @@ export default function DashboardPage() {
               /{url.shortCode}
             </a>
             {' -> '}{url.originalUrl}
-            {' | '}Klik: {url.clickCount}
+            {' | '}Clicks: {url.clickCount}
             {' | '}
-            <Link to={`/analytics/${url.shortCode}`}>Lihat Analytics</Link>
+            <Link to={`/analytics/${url.shortCode}`}>View Analytics</Link>
           </li>
         ))}
       </ul>

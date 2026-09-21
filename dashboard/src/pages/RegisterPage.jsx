@@ -26,9 +26,9 @@ export default function RegisterPage() {
         <input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} required />
         <input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} required />
         {error && <p style={{ color: 'red' }}>{error}</p>}
-        <button type="submit">Daftar</button>
+        <button type="submit">Sign Up</button>
       </form>
-      <p>Sudah punya akun? <Link to="/login">Login</Link></p>
+      <p>Already have an account? <Link to="/login">Sign In</Link></p>
     </div>
   );
 }

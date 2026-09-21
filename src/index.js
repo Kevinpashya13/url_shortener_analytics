@@ -16,7 +16,6 @@ app.use('/', authRoutes);
 app.use('/', userRoutes);
 app.use('/', shortenRoutes);
 app.use('/', analyticsRoutes);
-app.use('/', redirectRoutes);
 
 const PORT = process.env.PORT || 3000;
 
@@ -40,6 +39,9 @@ app.get('/health', async (req, res) => {
   const isHealthy = status.database === 'ok' && status.redis === 'ok';
   res.status(isHealthy ? 200 : 503).json(status);
 });
+
+app.use('/', redirectRoutes);
+
 
 async function startServer() {
   try {
