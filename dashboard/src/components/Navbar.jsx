@@ -1,10 +1,17 @@
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import './Navbar.css';
+
+const NAV_LINKS = [
+  { label: 'Home', to: '/' },
+  { label: 'Plans', to: '/pricing' },
+  { label: 'Analytics', to: '/features' },
+];
 
 export default function Navbar() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const handleLogout = () => {
     logout();
@@ -14,41 +21,34 @@ export default function Navbar() {
   return (
     <nav className="navbar">
       <Link to="/" className="navbar-brand">
-        <span className="brand-icon">Made by</span>
-        <span>Kevinpashya13</span>
+        <div className="brand-mark">K</div>
+        <span className="brand-name">Kevinpashya13</span>
       </Link>
 
       <div className="navbar-nav">
-        <Link to="/" className="nav-pill active">
-          URL Shortener
-        </Link>
-        <Link to={user ? "/dashboard" : "/login"} className="nav-pill">
-          Real-Time Analytics
-        </Link>
+        {NAV_LINKS.map((link) => (
+          <Link
+            key={link.to}
+            to={link.to}
+            className={`nav-item ${location.pathname === link.to ? 'nav-item-active' : ''}`}
+          >
+            {link.label}
+          </Link>
+        ))}
       </div>
 
       <div className="navbar-actions">
         {user ? (
-          <div style={{ display: 'flex', gap: '0.85rem', alignItems: 'center' }}>
-            <span className="user-badge">
-              Hello, <strong>{user.email?.split('@')[0]}</strong>
-            </span>
-            <Link to="/dashboard" className="nav-link">
-              Dashboard
-            </Link>
-            <button onClick={handleLogout} className="btn-logout">
-              Logout
-            </button>
-          </div>
+          <>
+            <span className="user-name">{user.email?.split('@')[0]}</span>
+            <Link to="/dashboard" className="nav-btn-outline">Dashboard</Link>
+            <button onClick={handleLogout} className="nav-btn-ghost">Logout</button>
+          </>
         ) : (
-          <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-            <Link to="/login" className="nav-link">
-              Sign In
-            </Link>
-            <Link to="/register" className="btn-primary-nav">
-              Sign Up Free
-            </Link>
-          </div>
+          <>
+            <Link to="/login" className="nav-item">Sign In</Link>
+            <Link to="/register" className="nav-btn-primary">Get Started</Link>
+          </>
         )}
       </div>
     </nav>

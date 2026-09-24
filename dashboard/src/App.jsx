@@ -9,6 +9,7 @@ import AnalyticsPage from './pages/AnalyticsPage';
 import LandingPage from './pages/LandingPage';
 import AuthGatePage from './pages/AuthGatePage';
 import PricingPage from './pages/PricingPage';
+import FeaturesPage from './pages/FeaturesPage';
 
 function AppRoutes() {
   const { user, loading } = useAuth();
@@ -22,6 +23,7 @@ function AppRoutes() {
         <Route path="/" element={<LandingPage />} />
         <Route path="/get-started" element={<AuthGatePage />} />
         <Route path="/pricing" element={<PricingPage />} />
+        <Route path="/features" element={<FeaturesPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
         <Route
