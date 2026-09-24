@@ -135,4 +135,85 @@ function groupByField(clickLogs, field, fallbackValue = 'unknown') {
     .sort((a, b) => b.count - a.count);
 }
 
-module.exports = { logClick, getAnalyticsSummary };
+async function getUserOverviewAnalytics(userId, role = 'STANDARD') {
+  const userUrls = await prisma.url.findMany({
+    where: { userId },
+    select: { id: true, shortCode: true, clickCount: true, createdAt: true },
+  });
+
+  const totalUrls = userUrls.length;
+  const totalClicks = userUrls.reduce((sum, u) => sum + (u.clickCount || 0), 0);
+  const urlIds = userUrls.map(u => u.id);
+
+  if (urlIds.length === 0) {
+    return {
+      totalUrls: 0,
+      totalClicks: 0,
+      clicksTrend: [],
+      deviceBreakdown: [],
+      browserBreakdown: [],
+      countryBreakdown: [],
+    };
+  }
+
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - 14);
+
+  const logs = await prisma.clickLog.findMany({
+    where: {
+      urlId: { in: urlIds },
+      clickedAt: { gte: cutoff },
+    },
+    orderBy: { clickedAt: 'asc' },
+  });
+
+  const limits = getLimits(role);
+
+  const days7Ago = new Date();
+  days7Ago.setDate(days7Ago.getDate() - 7);
+
+  const currentPeriodLogs = logs.filter(l => l.clickedAt >= days7Ago);
+  const previousPeriodLogs = logs.filter(l => l.clickedAt < days7Ago);
+
+  const days = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    const dateStr = d.toISOString().split('T')[0];
+    const monthName = d.toLocaleString('en-US', { month: 'short' });
+    const dayNum = d.getDate();
+    const label = `${monthName} ${dayNum}`;
+
+    const currCount = currentPeriodLogs.filter(l => l.clickedAt.toISOString().split('T')[0] === dateStr).length;
+
+    const prevD = new Date(d);
+    prevD.setDate(prevD.getDate() - 7);
+    const prevDateStr = prevD.toISOString().split('T')[0];
+    const prevCount = previousPeriodLogs.filter(l => l.clickedAt.toISOString().split('T')[0] === prevDateStr).length;
+
+    days.push({
+      date: label,
+      curr: currCount,
+      prev: prevCount,
+    });
+  }
+
+  const overview = {
+    totalUrls,
+    totalClicks,
+    clicksTrend: days,
+    deviceBreakdown: [],
+    browserBreakdown: [],
+    countryBreakdown: [],
+  };
+
+  if (limits.fullAnalytics) {
+    overview.deviceBreakdown = groupByField(logs, 'deviceType');
+    overview.browserBreakdown = groupByField(logs, 'browser');
+    overview.countryBreakdown = groupByField(logs, 'country');
+  }
+
+  return overview;
+}
+
+module.exports = { logClick, getAnalyticsSummary, getUserOverviewAnalytics };

@@ -9,5 +9,6 @@ export const getAnalytics = (shortCode, days) =>
   api.get(`/analytics/${shortCode}`, { params: days ? { days } : {} });
 
 export const getAccountMe = () => api.get('/account/me');
+export const getAccountAnalyticsOverview = () => api.get('/account/analytics-overview');
 
 export const upgradeAccount = (role) => api.post('/account/upgrade', { role });

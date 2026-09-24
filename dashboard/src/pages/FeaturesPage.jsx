@@ -46,7 +46,6 @@ export default function FeaturesPage() {
     <div className="fp">
       {/* Hero */}
       <div className="fp-hero">
-        <p className="fp-eyebrow">Analytics</p>
         <h1 className="fp-title">Know your audience</h1>
         <p className="fp-sub">
           Every short link comes with built-in analytics. Understand who clicks,

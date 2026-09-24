@@ -1,0 +1,215 @@
+/* AuthPage.css — shared split-screen layout for Login & Register */
+
+.auth-page {
+  display: flex;
+  min-height: calc(100vh - 60px); /* 60px = navbar height */
+  background: #ffffff;
+}
+
+/* ── Left: form side ── */
+.auth-form-side {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 40px;
+  background: #ffffff;
+}
+
+.auth-form-content {
+  width: 100%;
+  max-width: 380px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Brand inside form */
+.auth-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  text-decoration: none;
+  margin-bottom: 40px;
+}
+
+.auth-brand-mark {
+  width: 28px;
+  height: 28px;
+  background: #111118;
+  color: #ffffff;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+
+.auth-brand-name {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #111118;
+}
+
+/* Headings */
+.auth-title {
+  font-size: 1.6rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: #111118;
+  margin: 0 0 6px;
+}
+
+.auth-subtitle {
+  font-size: 0.9rem;
+  color: #6b6b80;
+  margin: 0 0 32px;
+}
+
+/* Form elements */
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.auth-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.auth-label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+.auth-input {
+  padding: 11px 14px;
+  border: 1.5px solid #d1d0cc;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  color: #111118;
+  background: #ffffff;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  font-family: inherit;
+}
+.auth-input::placeholder { color: #9ca3af; }
+.auth-input:focus {
+  border-color: #4f46e5;
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+}
+
+.auth-error {
+  font-size: 0.82rem;
+  color: #dc2626;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 7px;
+  padding: 9px 12px;
+  margin: 4px 0 0;
+}
+
+.auth-submit-btn {
+  margin-top: 4px;
+  padding: 12px;
+  background: #111118;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: opacity 0.15s;
+}
+.auth-submit-btn:hover { opacity: 0.85; }
+
+.auth-footer {
+  margin-top: 24px;
+  font-size: 0.85rem;
+  color: #6b7280;
+  text-align: center;
+}
+.auth-footer a {
+  color: #4f46e5;
+  text-decoration: none;
+  font-weight: 600;
+}
+.auth-footer a:hover { text-decoration: underline; }
+
+/* ── Right: image side ── */
+.auth-image-side {
+  flex: 1;
+  background: #f0efeb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  position: relative;
+}
+
+/*
+  Image placeholder — replace this div with your image.
+  Recommended: put your image file in dashboard/public/
+  Then replace <div class="auth-image-placeholder"> with:
+  <img src="/your-image.jpg" alt="" class="auth-image-fill" />
+*/
+.auth-image-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  border: 2px dashed #c7c5bf;
+  margin: 32px;
+  border-radius: 16px;
+  color: #9ca3af;
+}
+
+.auth-image-placeholder-icon {
+  width: 48px;
+  height: 48px;
+  background: #e8e7e3;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #9ca3af;
+}
+
+.auth-image-placeholder-text {
+  font-size: 0.85rem;
+  color: #9ca3af;
+  text-align: center;
+  line-height: 1.5;
+}
+
+/* For when you add the real image */
+.auth-image-fill {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* ── Mobile ── */
+@media (max-width: 768px) {
+  .auth-page {
+    min-height: calc(100vh - 60px);
+  }
+
+  /* Hide image panel entirely on mobile */
+  .auth-image-side {
+    display: none;
+  }
+
+  .auth-form-side {
+    padding: 36px 24px;
+  }
+}
+

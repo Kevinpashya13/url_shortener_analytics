@@ -3,6 +3,20 @@ const router = express.Router();
 const prisma = require('../config/prisma');
 const { authenticate } = require('../middlewares/auth');
 const { getLimits } = require('../config/planLimits');
+const { getUserOverviewAnalytics } = require('../services/analyticsService');
+
+// GET /account/analytics-overview — returns aggregated real analytics across all user's URLs
+router.get('/account/analytics-overview', authenticate, async (req, res) => {
+  try {
+    const role = req.user.role || 'STANDARD';
+    const overview = await getUserOverviewAnalytics(req.user.userId, role);
+    res.status(200).json(overview);
+  } catch (err) {
+    console.error('Error fetching analytics overview:', err);
+    res.status(500).json({ error: 'Failed to fetch analytics overview' });
+  }
+});
+
 
 // GET /account/me — returns current user profile, role, and quota usage
 router.get('/account/me', authenticate, async (req, res) => {

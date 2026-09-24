@@ -56,7 +56,6 @@ export default function LandingPage() {
 
       {/* Hero */}
       <section className="hero">
-        <div className="hero-eyebrow">URL Shortener &amp; Analytics</div>
         <h1 className="hero-title">
           Shorten, share, and<br />
           <span className="hero-accent">understand your links</span>

@@ -20,23 +20,27 @@ export default function Navbar() {
 
   return (
     <nav className="navbar">
-      <Link to="/" className="navbar-brand">
-        <div className="brand-mark">K</div>
-        <span className="brand-name">Kevinpashya13</span>
-      </Link>
+      {/* Left: logo + nav links together */}
+      <div className="navbar-left">
+        <Link to="/" className="navbar-brand">
+          <div className="brand-mark">KP</div>
+          <span className="brand-name">KPShortLink</span>
+        </Link>
 
-      <div className="navbar-nav">
-        {NAV_LINKS.map((link) => (
-          <Link
-            key={link.to}
-            to={link.to}
-            className={`nav-item ${location.pathname === link.to ? 'nav-item-active' : ''}`}
-          >
-            {link.label}
-          </Link>
-        ))}
+        <div className="navbar-nav">
+          {NAV_LINKS.map((link) => (
+            <Link
+              key={link.to}
+              to={link.to}
+              className={`nav-item ${location.pathname === link.to ? 'nav-item-active' : ''}`}
+            >
+              {link.label}
+            </Link>
+          ))}
+        </div>
       </div>
 
+      {/* Right: auth actions */}
       <div className="navbar-actions">
         {user ? (
           <>
