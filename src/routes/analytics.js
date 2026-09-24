@@ -6,11 +6,11 @@ const { authenticate } = require('../middlewares/auth');
 // GET /analytics/:code — requires login; returns role-filtered analytics
 router.get('/analytics/:code', authenticate, async (req, res) => {
   const { code } = req.params;
-  const { days } = req.query;
+  const { days, startDate, endDate } = req.query;
   const role = req.user.role || 'STANDARD';
 
   try {
-    const summary = await getAnalyticsSummary(code, days ? parseInt(days) : null, role);
+    const summary = await getAnalyticsSummary(code, { days, startDate, endDate }, role);
 
     if (!summary) {
       return res.status(404).json({ error: 'Short URL not found' });

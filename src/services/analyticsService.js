@@ -68,7 +68,19 @@ async function logClick(urlId, req) {
   }
 }
 
-async function getAnalyticsSummary(shortCode, days = null, role = 'STANDARD') {
+function toDateKey(date) {
+  const d = new Date(date);
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+async function getAnalyticsSummary(shortCode, options = {}, role = 'STANDARD') {
+  const days = typeof options === 'number' ? options : options?.days;
+  const startDate = typeof options === 'object' ? options?.startDate : null;
+  const endDate = typeof options === 'object' ? options?.endDate : null;
+
   const url = await prisma.url.findUnique({
     where: { shortCode },
     include: { clickLogs: true },
@@ -77,28 +89,34 @@ async function getAnalyticsSummary(shortCode, days = null, role = 'STANDARD') {
   if (!url) return null;
 
   let filteredLogs = url.clickLogs;
-  if (days) {
+
+  if (startDate && endDate) {
+    const start = new Date(startDate);
+    start.setHours(0, 0, 0, 0);
+    const end = new Date(endDate);
+    end.setHours(23, 59, 59, 999);
+    filteredLogs = url.clickLogs.filter((log) => log.clickedAt >= start && log.clickedAt <= end);
+  } else if (days && days !== 'all') {
     const cutoff = new Date();
-    cutoff.setDate(cutoff.getDate() - days);
+    cutoff.setDate(cutoff.getDate() - (parseInt(days) - 1));
+    cutoff.setHours(0, 0, 0, 0);
     filteredLogs = url.clickLogs.filter((log) => log.clickedAt >= cutoff);
   }
 
   const limits = getLimits(role);
-
   const clicksByDay = groupClicksByDay(filteredLogs);
 
-  // Base analytics available to all roles
   const summary = {
     shortCode: url.shortCode,
     originalUrl: url.originalUrl,
     totalClicks: url.clickCount,
+    filteredClicks: filteredLogs.length,
     createdAt: url.createdAt,
     expiredAt: url.expiredAt || null,
     fallbackUrl: url.fallbackUrl || null,
     clicksByDay,
   };
 
-  // Full analytics only for PRO, PREMIUM, ADMIN
   if (limits.fullAnalytics) {
     summary.deviceBreakdown = groupByField(filteredLogs, 'deviceType');
     summary.browserBreakdown = groupByField(filteredLogs, 'browser');
@@ -113,7 +131,7 @@ function groupClicksByDay(clickLogs) {
   const counts = {};
 
   for (const log of clickLogs) {
-    const date = log.clickedAt.toISOString().split('T')[0];
+    const date = toDateKey(log.clickedAt);
     counts[date] = (counts[date] || 0) + 1;
   }
 
@@ -135,7 +153,9 @@ function groupByField(clickLogs, field, fallbackValue = 'unknown') {
     .sort((a, b) => b.count - a.count);
 }
 
-async function getUserOverviewAnalytics(userId, role = 'STANDARD') {
+async function getUserOverviewAnalytics(userId, role = 'STANDARD', options = {}) {
+  const { days = '7', startDate = null, endDate = null } = options;
+
   const userUrls = await prisma.url.findMany({
     where: { userId },
     select: { id: true, shortCode: true, clickCount: true, createdAt: true },
@@ -143,7 +163,7 @@ async function getUserOverviewAnalytics(userId, role = 'STANDARD') {
 
   const totalUrls = userUrls.length;
   const totalClicks = userUrls.reduce((sum, u) => sum + (u.clickCount || 0), 0);
-  const urlIds = userUrls.map(u => u.id);
+  const urlIds = userUrls.map((u) => u.id);
 
   if (urlIds.length === 0) {
     return {
@@ -156,52 +176,80 @@ async function getUserOverviewAnalytics(userId, role = 'STANDARD') {
     };
   }
 
-  const cutoff = new Date();
-  cutoff.setDate(cutoff.getDate() - 14);
+  let dateFilter = {};
+  let startD = null;
+  let endD = null;
+
+  if (startDate && endDate) {
+    startD = new Date(startDate);
+    startD.setHours(0, 0, 0, 0);
+    endD = new Date(endDate);
+    endD.setHours(23, 59, 59, 999);
+    dateFilter = { gte: startD, lte: endD };
+  } else if (days !== 'all' && days !== null) {
+    const numDays = parseInt(days) || 7;
+    endD = new Date();
+    endD.setHours(23, 59, 59, 999);
+    startD = new Date();
+    startD.setDate(startD.getDate() - (numDays - 1));
+    startD.setHours(0, 0, 0, 0);
+    dateFilter = { gte: startD, lte: endD };
+  }
 
   const logs = await prisma.clickLog.findMany({
     where: {
       urlId: { in: urlIds },
-      clickedAt: { gte: cutoff },
+      ...(Object.keys(dateFilter).length > 0 ? { clickedAt: dateFilter } : {}),
     },
     orderBy: { clickedAt: 'asc' },
   });
 
-  const limits = getLimits(role);
+  const points = [];
+  if (startD && endD) {
+    const curr = new Date(startD);
+    while (curr <= endD) {
+      const dateStr = toDateKey(curr);
+      const monthName = curr.toLocaleString('en-US', { month: 'short' });
+      const dayNum = curr.getDate();
+      const label = `${monthName} ${dayNum}`;
 
-  const days7Ago = new Date();
-  days7Ago.setDate(days7Ago.getDate() - 7);
+      const count = logs.filter((l) => toDateKey(l.clickedAt) === dateStr).length;
+      points.push({ date: label, count });
 
-  const currentPeriodLogs = logs.filter(l => l.clickedAt >= days7Ago);
-  const previousPeriodLogs = logs.filter(l => l.clickedAt < days7Ago);
-
-  const days = [];
-  for (let i = 6; i >= 0; i--) {
-    const d = new Date();
-    d.setDate(d.getDate() - i);
-    const dateStr = d.toISOString().split('T')[0];
-    const monthName = d.toLocaleString('en-US', { month: 'short' });
-    const dayNum = d.getDate();
-    const label = `${monthName} ${dayNum}`;
-
-    const currCount = currentPeriodLogs.filter(l => l.clickedAt.toISOString().split('T')[0] === dateStr).length;
-
-    const prevD = new Date(d);
-    prevD.setDate(prevD.getDate() - 7);
-    const prevDateStr = prevD.toISOString().split('T')[0];
-    const prevCount = previousPeriodLogs.filter(l => l.clickedAt.toISOString().split('T')[0] === prevDateStr).length;
-
-    days.push({
-      date: label,
-      curr: currCount,
-      prev: prevCount,
+      curr.setDate(curr.getDate() + 1);
+    }
+  } else {
+    const dailyMap = {};
+    logs.forEach((l) => {
+      const dateStr = toDateKey(l.clickedAt);
+      dailyMap[dateStr] = (dailyMap[dateStr] || 0) + 1;
     });
+
+    if (Object.keys(dailyMap).length === 0) {
+      for (let i = 6; i >= 0; i--) {
+        const d = new Date();
+        d.setDate(d.getDate() - i);
+        const monthName = d.toLocaleString('en-US', { month: 'short' });
+        points.push({ date: `${monthName} ${d.getDate()}`, count: 0 });
+      }
+    } else {
+      Object.entries(dailyMap)
+        .sort((a, b) => a[0].localeCompare(b[0]))
+        .forEach(([dStr, count]) => {
+          const d = new Date(dStr);
+          const monthName = d.toLocaleString('en-US', { month: 'short' });
+          points.push({ date: `${monthName} ${d.getDate()}`, count });
+        });
+    }
   }
+
+  const limits = getLimits(role);
 
   const overview = {
     totalUrls,
     totalClicks,
-    clicksTrend: days,
+    filteredClicks: logs.length,
+    clicksTrend: points,
     deviceBreakdown: [],
     browserBreakdown: [],
     countryBreakdown: [],
@@ -215,5 +263,6 @@ async function getUserOverviewAnalytics(userId, role = 'STANDARD') {
 
   return overview;
 }
+
 
 module.exports = { logClick, getAnalyticsSummary, getUserOverviewAnalytics };

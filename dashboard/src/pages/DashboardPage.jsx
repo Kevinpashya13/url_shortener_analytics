@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   Bell, MoreHorizontal, Users, ArrowUpRight, ArrowDownRight,
-  Copy, Check, ExternalLink, Plus, Globe, Sparkles, Lock
+  Copy, Check, ExternalLink, Plus, Globe, Sparkles, Lock, Calendar, RotateCcw
 } from 'lucide-react';
 import {
   createShortUrl, getMyUrls, getAccountMe,
@@ -28,6 +28,51 @@ const COUNTRY_NAMES = {
   AU: 'Australia',
 };
 
+function toDateKey(date) {
+  const d = new Date(date);
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+export function getLastWeekRange(refDate = new Date()) {
+  const now = new Date(refDate);
+  const dayOfWeek = now.getDay(); // 0 is Sunday, 1 is Mon, ..., 6 is Sat
+  const end = new Date(now);
+  if (dayOfWeek === 0) {
+    // Sunday: current week is completed
+  } else {
+    // Monday to Saturday: previous week ended on preceding Sunday
+    end.setDate(now.getDate() - dayOfWeek);
+  }
+  end.setHours(23, 59, 59, 999);
+  const start = new Date(end);
+  start.setDate(end.getDate() - 6);
+  start.setHours(0, 0, 0, 0);
+  return { startDate: toDateKey(start), endDate: toDateKey(end) };
+}
+
+export function getLastMonthRange(refDate = new Date()) {
+  const now = new Date(refDate);
+  const year = now.getFullYear();
+  const month = now.getMonth();
+  const date = now.getDate();
+  const lastDayOfCurrentMonth = new Date(year, month + 1, 0).getDate();
+  const isLastDay = (date === lastDayOfCurrentMonth);
+
+  let start, end;
+  if (isLastDay) {
+    start = new Date(year, month, 1);
+    end = new Date(year, month, lastDayOfCurrentMonth, 23, 59, 59, 999);
+  } else {
+    const prevMonthLastDay = new Date(year, month, 0).getDate();
+    start = new Date(year, month - 1, 1);
+    end = new Date(year, month - 1, prevMonthLastDay, 23, 59, 59, 999);
+  }
+  return { startDate: toDateKey(start), endDate: toDateKey(end) };
+}
+
 function getCountryFlag(code) {
   if (!code || code === 'unknown' || code.length !== 2) return '🌐';
   const codePoints = code
@@ -37,131 +82,320 @@ function getCountryFlag(code) {
   return String.fromCodePoint(...codePoints);
 }
 
-// ── Spline Dual Curve Chart ──────────────────────────────────────────────────
-function SplineSiteSessionsChart({ trendData }) {
+// ── Date Range Filter Component ──────────────────────────────────────────────
+function DateRangeFilter({
+  selectedRange,
+  onSelectRange,
+  customStart,
+  setCustomStart,
+  customEnd,
+  setCustomEnd,
+  onApplyCustom,
+}) {
+  const [showCustom, setShowCustom] = useState(false);
+
+  return (
+    <div className="date-filter-box">
+      <div className="date-presets-row">
+        {[
+          { id: 'last_week', label: 'Last Week' },
+          { id: 'last_month', label: 'Last Month' },
+          { id: 'all', label: 'All Time' },
+        ].map((p) => (
+          <button
+            key={p.id}
+            type="button"
+            className={`date-preset-btn ${selectedRange === p.id && !showCustom ? 'active' : ''}`}
+            onClick={() => {
+              setShowCustom(false);
+              onSelectRange(p.id);
+            }}
+          >
+            {p.label}
+          </button>
+        ))}
+
+        <button
+          type="button"
+          className={`date-preset-btn ${showCustom ? 'active' : ''}`}
+          onClick={() => setShowCustom(!showCustom)}
+        >
+          <Calendar size={13} />
+          <span>Custom</span>
+        </button>
+      </div>
+
+      {showCustom && (
+        <div className="date-custom-panel">
+          <div className="date-input-group">
+            <span className="date-field-label">From</span>
+            <input
+              type="date"
+              value={customStart}
+              onChange={(e) => setCustomStart(e.target.value)}
+              className="date-picker-input"
+            />
+          </div>
+          <span className="date-picker-sep">→</span>
+          <div className="date-input-group">
+            <span className="date-field-label">To</span>
+            <input
+              type="date"
+              value={customEnd}
+              onChange={(e) => setCustomEnd(e.target.value)}
+              className="date-picker-input"
+            />
+          </div>
+          <button
+            type="button"
+            className="date-picker-apply"
+            onClick={() => {
+              if (customStart && customEnd) {
+                onApplyCustom(customStart, customEnd);
+              }
+            }}
+          >
+            Apply
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Smooth Spline Curve Chart ────────────────────────────────────────────────
+function SplineSiteSessionsChart({
+  trendData,
+  selectedRange,
+  onSelectRange,
+  customStart,
+  setCustomStart,
+  customEnd,
+  setCustomEnd,
+  onApplyCustom,
+}) {
   const [hoveredIdx, setHoveredIdx] = useState(null);
-  const containerRef = useRef(null);
+  const canvasRef = useRef(null);
 
   const days = (trendData && trendData.length > 0)
     ? trendData
     : [
-        { date: 'Day 1', curr: 0, prev: 0 },
-        { date: 'Day 2', curr: 0, prev: 0 },
-        { date: 'Day 3', curr: 0, prev: 0 },
-        { date: 'Day 4', curr: 0, prev: 0 },
-        { date: 'Day 5', curr: 0, prev: 0 },
-        { date: 'Day 6', curr: 0, prev: 0 },
-        { date: 'Day 7', curr: 0, prev: 0 },
+        { date: 'Day 1', count: 0 },
+        { date: 'Day 2', count: 0 },
+        { date: 'Day 3', count: 0 },
+        { date: 'Day 4', count: 0 },
+        { date: 'Day 5', count: 0 },
+        { date: 'Day 6', count: 0 },
+        { date: 'Day 7', count: 0 },
       ];
 
   const W = 700, H = 240;
-  const pad = { top: 20, right: 30, bottom: 35, left: 40 };
+  const pad = { top: 24, right: 30, bottom: 35, left: 40 };
 
-  const maxVal = Math.max(...days.map((d) => Math.max(d.curr, d.prev)), 10);
-  const maxY = Math.ceil(maxVal * 1.2);
+  const maxVal = Math.max(...days.map((d) => d.count), 5);
+  const maxY = Math.ceil(maxVal * 1.25);
 
-  const getX = (i) => pad.left + (i / (days.length - 1)) * (W - pad.left - pad.right);
+  const getX = (i) => pad.left + (i / Math.max(days.length - 1, 1)) * (W - pad.left - pad.right);
   const getY = (v) => pad.top + (1 - v / maxY) * (H - pad.top - pad.bottom);
 
   // Smooth bezier curve generator
-  const createCurvedPath = (key) => {
-    return days.reduce((acc, point, i, arr) => {
+  const createCurvedPath = () => {
+    if (days.length === 1) {
+      return `M ${getX(0)},${getY(days[0].count)}`;
+    }
+      return days.reduce((acc, point, i, arr) => {
       const x = getX(i);
-      const y = getY(point[key]);
+      const y = getY(point.count);
       if (i === 0) return `M ${x},${y}`;
       const prevX = getX(i - 1);
-      const prevY = getY(arr[i - 1][key]);
+      const prevY = getY(arr[i - 1].count);
       const cp1x = prevX + (x - prevX) / 2;
       const cp2x = prevX + (x - prevX) / 2;
       return `${acc} C ${cp1x},${prevY} ${cp2x},${y} ${x},${y}`;
     }, '');
   };
 
-  const handleMouseMove = (e) => {
-    if (!containerRef.current) return;
-    const rect = containerRef.current.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const scaleX = W / rect.width;
-    const svgX = x * scaleX;
+  const linePath = createCurvedPath();
+  const areaPath = days.length >= 2
+    ? `${linePath} L ${getX(days.length - 1)},${H - pad.bottom} L ${getX(0)},${H - pad.bottom} Z`
+    : '';
 
-    let closest = 0, minDist = Infinity;
+  // Hover restricted strictly to the SVG chart area itself
+  const handleMouseMove = (e) => {
+    if (!canvasRef.current) return;
+    const rect = canvasRef.current.getBoundingClientRect();
+    const clientX = e.clientX - rect.left;
+    const clientY = e.clientY - rect.top;
+
+    // Reject if outside the actual plot bounds
+    if (
+      clientX < pad.left - 15 ||
+      clientX > rect.width - (pad.right * rect.width / W) + 15 ||
+      clientY < pad.top - 20 ||
+      clientY > rect.height - (pad.bottom * rect.height / H) + 20
+    ) {
+      setHoveredIdx(null);
+      return;
+    }
+
+    const scaleX = W / rect.width;
+    const svgX = clientX * scaleX;
+
+    let closest = null, minDist = Infinity;
     days.forEach((_, i) => {
       const dist = Math.abs(getX(i) - svgX);
-      if (dist < minDist) { minDist = dist; closest = i; }
+      if (dist < minDist && dist < 45 * scaleX) {
+        minDist = dist;
+        closest = i;
+      }
     });
     setHoveredIdx(closest);
   };
 
-  const activeIndex = hoveredIdx !== null ? hoveredIdx : days.length - 1;
-  const yTicks = [0, Math.round(maxY * 0.25), Math.round(maxY * 0.5), Math.round(maxY * 0.75), maxY];
+  const yTicks = [0, Math.round(maxY * 0.33), Math.round(maxY * 0.66), maxY];
+
+  // Non-overlapping X labels computation
+  const maxLabels = 7;
+  const labelStep = Math.max(1, Math.ceil(days.length / maxLabels));
+  const visibleLabelIndices = new Set();
+  for (let i = 0; i < days.length; i += labelStep) {
+    visibleLabelIndices.add(i);
+  }
+  // Ensure the last date is shown if not too close to the previous shown label
+  if (days.length > 1) {
+    const lastIdx = days.length - 1;
+    let closestPrev = -1;
+    visibleLabelIndices.forEach((idx) => {
+      if (idx < lastIdx && idx > closestPrev) closestPrev = idx;
+    });
+    if (lastIdx - closestPrev >= Math.max(1, Math.floor(labelStep * 0.6))) {
+      visibleLabelIndices.add(lastIdx);
+    }
+  }
+
+  // Range description text
+  let subDescription = 'Showing last 7 days (default)';
+  if (selectedRange === 'last_week') {
+    const r = getLastWeekRange();
+    subDescription = `Last Week (${r.startDate} to ${r.endDate})`;
+  } else if (selectedRange === 'last_month') {
+    const r = getLastMonthRange();
+    subDescription = `Last Month (${r.startDate} to ${r.endDate})`;
+  } else if (selectedRange === 'all') {
+    subDescription = 'All time traffic';
+  } else if (selectedRange === 'custom' && customStart && customEnd) {
+    subDescription = `Custom (${customStart} to ${customEnd})`;
+  }
 
   return (
-    <div className="spline-chart-wrap" ref={containerRef} onMouseMove={handleMouseMove} onMouseLeave={() => setHoveredIdx(null)}>
+    <div className="spline-chart-wrap">
       <div className="spline-header">
-        <h3 className="card-section-title">Site Sessions</h3>
-        <div className="spline-legend">
-          <span className="legend-item"><span className="legend-dot blue" /> Current 7 Days</span>
-          <span className="legend-item"><span className="legend-dot pink" /> Previous 7 Days</span>
+        <div>
+          <div className="spline-title-row">
+            <h3 className="card-section-title">Site Sessions</h3>
+            {selectedRange && (
+              <button
+                type="button"
+                className="reset-filter-btn"
+                onClick={() => onSelectRange('default')}
+                title="Reset to 7 days default"
+              >
+                <RotateCcw size={11} /> Reset
+              </button>
+            )}
+          </div>
+          <span className="spline-sub-info">{subDescription}</span>
         </div>
+
+        <DateRangeFilter
+          selectedRange={selectedRange}
+          onSelectRange={onSelectRange}
+          customStart={customStart}
+          setCustomStart={setCustomStart}
+          customEnd={customEnd}
+          setCustomEnd={setCustomEnd}
+          onApplyCustom={onApplyCustom}
+        />
       </div>
 
-      <svg width="100%" height={H} viewBox={`0 0 ${W} ${H}`} style={{ overflow: 'visible' }}>
-        {/* Horizontal grid lines */}
-        {yTicks.map((val) => (
-          <g key={val}>
-            <line
-              x1={pad.left} y1={getY(val)}
-              x2={W - pad.right} y2={getY(val)}
-              stroke="#f1f5f9" strokeWidth="1.2"
+      {/* Dedicated Chart Canvas — Hover ONLY activates here */}
+      <div
+        className="spline-chart-canvas"
+        ref={canvasRef}
+        onMouseMove={handleMouseMove}
+        onMouseLeave={() => setHoveredIdx(null)}
+      >
+        <svg width="100%" height={H} viewBox={`0 0 ${W} ${H}`} style={{ overflow: 'visible', display: 'block' }}>
+          <defs>
+            <linearGradient id="trafficAreaGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.22" />
+              <stop offset="100%" stopColor="#3b82f6" stopOpacity="0.0" />
+            </linearGradient>
+          </defs>
+
+          {/* Horizontal grid lines */}
+          {yTicks.map((val) => (
+            <g key={val}>
+              <line
+                x1={pad.left} y1={getY(val)}
+                x2={W - pad.right} y2={getY(val)}
+                stroke="#f1f5f9" strokeWidth="1.2"
+              />
+              <text x={pad.left - 12} y={getY(val) + 3} fill="#94a3b8" fontSize="11" textAnchor="end">
+                {val >= 1000 ? `${(val / 1000).toFixed(1)}k` : val}
+              </text>
+            </g>
+          ))}
+
+          {/* Non-overlapping X labels */}
+          {days.map((d, i) => {
+            if (!visibleLabelIndices.has(i)) return null;
+            return (
+              <text key={d.date} x={getX(i)} y={H - 10} fill="#94a3b8" fontSize="11" textAnchor="middle">
+                {d.date}
+              </text>
+            );
+          })}
+
+          {/* Area Fill */}
+          {areaPath && <path d={areaPath} fill="url(#trafficAreaGrad)" />}
+
+          {/* Main Traffic Curve */}
+          <path d={linePath} fill="none" stroke="#3b82f6" strokeWidth="3.5" strokeLinecap="round" />
+
+          {/* Active hover dot (ONLY when hovered) */}
+          {hoveredIdx !== null && days[hoveredIdx] && (
+            <circle
+              cx={getX(hoveredIdx)}
+              cy={getY(days[hoveredIdx].count)}
+              r="6"
+              fill="#3b82f6"
+              stroke="#ffffff"
+              strokeWidth="2.5"
             />
-            <text x={pad.left - 12} y={getY(val) + 3} fill="#94a3b8" fontSize="11" textAnchor="end">
-              {val >= 1000 ? `${(val / 1000).toFixed(1)}k` : val}
-            </text>
-          </g>
-        ))}
+          )}
+        </svg>
 
-        {/* X labels */}
-        {days.map((d, i) => (
-          <text key={d.date} x={getX(i)} y={H - 10} fill="#94a3b8" fontSize="11" textAnchor="middle">
-            {d.date}
-          </text>
-        ))}
-
-        {/* Curves */}
-        <path d={createCurvedPath('prev')} fill="none" stroke="#f472b6" strokeWidth="3.5" strokeLinecap="round" />
-        <path d={createCurvedPath('curr')} fill="none" stroke="#3b82f6" strokeWidth="3.5" strokeLinecap="round" />
-
-        {/* Hover indicators */}
-        {activeIndex !== null && (
-          <g>
-            <circle cx={getX(activeIndex)} cy={getY(days[activeIndex].curr)} r="6" fill="#3b82f6" stroke="#fff" strokeWidth="2.5" />
-            <circle cx={getX(activeIndex)} cy={getY(days[activeIndex].prev)} r="6" fill="#f472b6" stroke="#fff" strokeWidth="2.5" />
-          </g>
+        {/* Floating Tooltip Card (ONLY when hovered, positioned on canvas) */}
+        {hoveredIdx !== null && days[hoveredIdx] && (
+          <div
+            className="spline-tooltip-card"
+            style={{
+              left: `${(getX(hoveredIdx) / W) * 100}%`,
+              top: `${Math.max(getY(days[hoveredIdx].count) - 50, 10)}px`,
+            }}
+          >
+            <div className="tooltip-row">
+              <span className="tooltip-dot blue" />
+              <span className="tooltip-label">{days[hoveredIdx].date}</span>
+            </div>
+            <div className="tooltip-val blue-text">
+              {days[hoveredIdx].count.toLocaleString()}{' '}
+              {days[hoveredIdx].count === 1 ? 'click' : 'clicks'}
+            </div>
+          </div>
         )}
-      </svg>
-
-      {/* Floating Tooltip Card */}
-      {activeIndex !== null && (
-        <div
-          className="spline-tooltip-card"
-          style={{
-            left: `${(getX(activeIndex) / W) * 100}%`,
-            top: `${Math.max(getY(days[activeIndex].curr) - 45, 10)}px`,
-          }}
-        >
-          <div className="tooltip-row">
-            <span className="tooltip-dot blue" />
-            <span className="tooltip-label">{days[activeIndex].date}</span>
-          </div>
-          <div className="tooltip-val blue-text">{days[activeIndex].curr.toLocaleString()} clicks</div>
-          <div className="tooltip-divider" />
-          <div className="tooltip-row">
-            <span className="tooltip-dot pink" />
-            <span className="tooltip-label">Previous 7d</span>
-          </div>
-          <div className="tooltip-val pink-text">{days[activeIndex].prev.toLocaleString()} clicks</div>
-        </div>
-      )}
+      </div>
     </div>
   );
 }
@@ -202,19 +436,16 @@ function DeviceBubbleChart({ breakdown, isStandard }) {
 
       <div className="bubble-graphic-wrap">
         <svg viewBox="0 0 260 210" className="bubble-svg">
-          {/* Desktop Circle (Blue) */}
           <circle cx="95" cy="95" r="72" fill="#3b82f6" />
           <text x="95" y="103" textAnchor="middle" fill="#ffffff" fontSize="24" fontWeight="800">
             {desktopPct}%
           </text>
 
-          {/* Mobile Circle (Dark Emerald Teal) */}
           <circle cx="185" cy="85" r="48" fill="#044e43" />
           <text x="185" y="91" textAnchor="middle" fill="#ffffff" fontSize="17" fontWeight="700">
             {mobilePct}%
           </text>
 
-          {/* Tablet Circle (Salmon Pink) */}
           <circle cx="168" cy="148" r="32" fill="#f87171" />
           <text x="168" y="153" textAnchor="middle" fill="#ffffff" fontSize="13" fontWeight="700">
             {tabletPct}%
@@ -243,7 +474,7 @@ function DeviceBubbleChart({ breakdown, isStandard }) {
   );
 }
 
-// ── Striped Vertical Pill Bar Chart (Browser / Age) ──────────────────────────
+// ── Striped Vertical Pill Bar Chart (Browser) ────────────────────────────────
 function StripedPillBarChart({ breakdown, isStandard }) {
   if (isStandard) {
     return (
@@ -350,28 +581,19 @@ function WorldActiveUsersCard({ breakdown, isStandard, totalClicks }) {
       </div>
 
       <div className="geo-right">
-        {/* Floating Active Badge */}
         <div className="floating-active-badge">
           <Users size={16} className="fab-icon" />
           <span className="fab-val">{totalClicks.toLocaleString()}</span>
         </div>
 
-        {/* Minimalist World Map Vector */}
         <svg viewBox="0 0 650 340" className="world-map-svg">
-          {/* North America */}
           <path fill="#e2e8f0" d="M70,55 C120,40 170,50 190,80 C180,120 150,140 120,135 C100,160 85,150 70,110 Z" />
-          {/* South America */}
           <path fill="#e2e8f0" d="M140,165 C175,170 195,210 180,260 C160,280 150,260 140,210 Z" />
-          {/* Europe */}
           <path fill="#e2e8f0" d="M280,65 C320,50 340,75 320,105 C290,110 275,90 280,65 Z" />
-          {/* Africa */}
           <path fill="#e2e8f0" d="M280,125 C330,120 345,170 330,225 C300,240 285,210 280,160 Z" />
-          {/* Asia */}
           <path fill="#e2e8f0" d="M350,60 C440,45 520,70 510,130 C450,160 380,140 350,100 Z" />
-          {/* Australia */}
           <path fill="#e2e8f0" d="M470,215 C520,210 540,245 510,270 C475,270 460,245 470,215 Z" />
 
-          {/* Pulsing Glowing Location Pinpoints */}
           {[
             { cx: 120, cy: 95 },
             { cx: 165, cy: 220 },
@@ -401,6 +623,10 @@ export default function DashboardPage() {
   const [urls, setUrls] = useState([]);
   const [account, setAccount] = useState(null);
   const [overview, setOverview] = useState(null);
+  const [selectedRange, setSelectedRange] = useState(null); // null = default 7 days
+  const [customStart, setCustomStart] = useState('');
+  const [customEnd, setCustomEnd] = useState('');
+
   const [originalUrl, setOriginalUrl] = useState(location.state?.pendingUrl || '');
   const [customAlias, setCustomAlias] = useState('');
   const [expiredAt, setExpiredAt] = useState('');
@@ -413,16 +639,25 @@ export default function DashboardPage() {
   const isStandard = role === 'STANDARD';
   const features = account?.features || {};
 
+  const fetchOverview = async (params = {}) => {
+    try {
+      const res = await getAccountAnalyticsOverview(params);
+      setOverview(res.data);
+    } catch (err) {
+      console.error('Failed to load analytics overview:', err);
+    }
+  };
+
   const fetchData = async () => {
     try {
-      const [urlsRes, meRes, overviewRes] = await Promise.all([
+      const [urlsRes, meRes] = await Promise.all([
         getMyUrls(),
         getAccountMe(),
-        getAccountAnalyticsOverview(),
       ]);
       setUrls(urlsRes.data);
       setAccount(meRes.data);
-      setOverview(overviewRes.data);
+      // Default: 7 days
+      await fetchOverview({ days: 7 });
     } catch (err) {
       console.error('Failed to load dashboard data:', err);
     }
@@ -443,6 +678,32 @@ export default function DashboardPage() {
   }, []);
 
   useEffect(() => { fetchData(); }, []);
+
+  const handleSelectRange = (rangeId) => {
+    if (rangeId === selectedRange || rangeId === 'default') {
+      // Toggle off / reset to default 7 days
+      setSelectedRange(null);
+      fetchOverview({ days: 7 });
+      return;
+    }
+
+    setSelectedRange(rangeId);
+
+    if (rangeId === 'last_week') {
+      const { startDate, endDate } = getLastWeekRange();
+      fetchOverview({ startDate, endDate });
+    } else if (rangeId === 'last_month') {
+      const { startDate, endDate } = getLastMonthRange();
+      fetchOverview({ startDate, endDate });
+    } else if (rangeId === 'all') {
+      fetchOverview({ days: 'all' });
+    }
+  };
+
+  const handleApplyCustom = (start, end) => {
+    setSelectedRange('custom');
+    fetchOverview({ startDate: start, endDate: end });
+  };
 
   const handleCreate = async (e) => {
     e.preventDefault();
@@ -507,7 +768,7 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* ── Main Grid (Real Data Linked) ── */}
+      {/* ── Main Grid ── */}
       <div className="dash-grid-layout">
 
         {/* ── LEFT COLUMN ── */}
@@ -519,7 +780,7 @@ export default function DashboardPage() {
               <span className="kpi-label">Total Shortened Links</span>
               <div className="kpi-num">{urls.length}</div>
               <div className="kpi-trend green">
-                <ArrowUpRight size={13} /> Active <span className="kpi-vs">in your library</span>
+                <ArrowUpRight size={13} /> Active <span className="kpi-vs">in library</span>
               </div>
             </div>
 
@@ -540,9 +801,18 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* Spline Chart */}
+          {/* Spline Chart with Date Range Controls */}
           <div className="dash-box">
-            <SplineSiteSessionsChart trendData={overview?.clicksTrend} />
+            <SplineSiteSessionsChart
+              trendData={overview?.clicksTrend}
+              selectedRange={selectedRange}
+              onSelectRange={handleSelectRange}
+              customStart={customStart}
+              setCustomStart={setCustomStart}
+              customEnd={customEnd}
+              setCustomEnd={setCustomEnd}
+              onApplyCustom={handleApplyCustom}
+            />
           </div>
 
           {/* World Active Users */}
@@ -582,7 +852,7 @@ export default function DashboardPage() {
             <div className="form-main-row">
               <input
                 type="url"
-                placeholder="Paste your destination URL here (e.g. https://yourwebsite.com)"
+                placeholder="Paste destination URL (e.g. https://yourwebsite.com)"
                 value={originalUrl}
                 onChange={(e) => setOriginalUrl(e.target.value)}
                 required
@@ -593,7 +863,6 @@ export default function DashboardPage() {
               </button>
             </div>
 
-            {/* Feature Options Row */}
             <div className="form-options-row">
               {features.customAlias ? (
                 <input

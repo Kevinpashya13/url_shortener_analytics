@@ -223,9 +223,127 @@
 .spline-header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
   margin-bottom: 20px;
 }
+
+.spline-sub-info {
+  font-size: 0.78rem;
+  color: #94a3b8;
+  font-weight: 500;
+  display: block;
+  margin-top: 2px;
+}
+
+.date-filter-box {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.date-presets-row {
+  display: flex;
+  background: #f1f5f9;
+  padding: 4px;
+  border-radius: 999px;
+  border: 1px solid #e2e8f0;
+  gap: 3px;
+}
+
+.date-preset-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: none;
+  background: transparent;
+  color: #64748b;
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  padding: 6px 14px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.date-preset-btn:hover {
+  color: #0f172a;
+  background: rgba(255, 255, 255, 0.6);
+}
+
+.date-preset-btn.active {
+  background: #ffffff;
+  color: #0f172a;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  border: 1px solid #e2e8f0;
+}
+
+.date-custom-panel {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  padding: 10px 14px;
+  border-radius: 16px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.06);
+  margin-top: 4px;
+}
+
+.date-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.date-field-label {
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: #94a3b8;
+  letter-spacing: 0.05em;
+}
+
+.date-picker-input {
+  border: 1.5px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #0f172a;
+  background: #f8fafc;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.date-picker-input:focus {
+  border-color: #3b82f6;
+  background: #ffffff;
+}
+
+.date-picker-sep {
+  color: #cbd5e1;
+  font-weight: 700;
+  font-size: 0.9rem;
+  margin-top: 14px;
+}
+
+.date-picker-apply {
+  background: #0f172a;
+  color: #ffffff;
+  border: none;
+  border-radius: 999px;
+  padding: 8px 18px;
+  font-size: 0.8rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: opacity 0.15s;
+  margin-top: 14px;
+}
+.date-picker-apply:hover {
+  opacity: 0.85;
+}
+
 
 .spline-legend {
   display: flex;
@@ -238,6 +356,7 @@
 .legend-dot { width: 8px; height: 8px; border-radius: 50%; }
 .legend-dot.blue { background: #3b82f6; }
 .legend-dot.pink { background: #f472b6; }
+
 
 /* Floating Tooltip */
 .spline-tooltip-card {

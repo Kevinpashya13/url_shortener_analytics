@@ -9,7 +9,8 @@ const { getUserOverviewAnalytics } = require('../services/analyticsService');
 router.get('/account/analytics-overview', authenticate, async (req, res) => {
   try {
     const role = req.user.role || 'STANDARD';
-    const overview = await getUserOverviewAnalytics(req.user.userId, role);
+    const { days, startDate, endDate } = req.query;
+    const overview = await getUserOverviewAnalytics(req.user.userId, role, { days, startDate, endDate });
     res.status(200).json(overview);
   } catch (err) {
     console.error('Error fetching analytics overview:', err);
