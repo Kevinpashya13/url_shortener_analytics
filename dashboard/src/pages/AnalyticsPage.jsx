@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import {
   ArrowLeft, ExternalLink, MousePointerClick, Calendar,
-  Clock, ShieldCheck, Copy, Check, MoreHorizontal, Users, Lock, RotateCcw
+  Clock, ShieldCheck, Copy, Check, MoreHorizontal, Users, Lock
 } from 'lucide-react';
 import { getAnalytics } from '../api/url';
 import { useAuth } from '../context/AuthContext';
@@ -114,7 +114,7 @@ function DateRangeFilter({
 
         <button
           type="button"
-          className={`date-preset-btn ${showCustom ? 'active' : ''}`}
+          className={`date-preset-btn ${selectedRange === 'custom' || showCustom ? 'active' : ''}`}
           onClick={() => setShowCustom(!showCustom)}
         >
           <Calendar size={13} />
@@ -149,6 +149,7 @@ function DateRangeFilter({
             onClick={() => {
               if (customStart && customEnd) {
                 onApplyCustom(customStart, customEnd);
+                setShowCustom(false);
               }
             }}
           >
@@ -287,16 +288,6 @@ function SplineUrlClicksChart({
         <div>
           <div className="spline-title-row">
             <h3 className="card-section-title">Clicks Timeline</h3>
-            {selectedRange && (
-              <button
-                type="button"
-                className="reset-filter-btn"
-                onClick={() => onSelectRange('default')}
-                title="Reset to 7 days default"
-              >
-                <RotateCcw size={11} /> Reset
-              </button>
-            )}
           </div>
           <span className="spline-sub-info">{subDescription}</span>
         </div>

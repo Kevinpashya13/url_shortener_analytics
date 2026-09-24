@@ -157,6 +157,7 @@
 }
 
 .date-filter-box {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: flex-end;
@@ -176,7 +177,7 @@
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  border: none;
+  border: 1px solid transparent;
   background: transparent;
   color: #64748b;
   font-size: 0.8rem;
@@ -185,7 +186,7 @@
   padding: 6px 14px;
   border-radius: 999px;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: none;
 }
 
 .date-preset-btn:hover {
@@ -197,10 +198,14 @@
   background: #ffffff;
   color: #0f172a;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-  border: 1px solid #e2e8f0;
+  border-color: #e2e8f0;
 }
 
 .date-custom-panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 30;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -208,8 +213,7 @@
   border: 1px solid #e2e8f0;
   padding: 10px 14px;
   border-radius: 16px;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.06);
-  margin-top: 4px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
 }
 
 .date-input-group {

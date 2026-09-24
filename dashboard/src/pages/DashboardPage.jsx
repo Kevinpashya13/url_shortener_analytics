@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   Bell, MoreHorizontal, Users, ArrowUpRight, ArrowDownRight,
-  Copy, Check, ExternalLink, Plus, Globe, Sparkles, Lock, Calendar, RotateCcw
+  Copy, Check, ExternalLink, Plus, Globe, Sparkles, Lock, Calendar
 } from 'lucide-react';
 import {
   createShortUrl, getMyUrls, getAccountMe,
@@ -117,7 +117,7 @@ function DateRangeFilter({
 
         <button
           type="button"
-          className={`date-preset-btn ${showCustom ? 'active' : ''}`}
+          className={`date-preset-btn ${selectedRange === 'custom' || showCustom ? 'active' : ''}`}
           onClick={() => setShowCustom(!showCustom)}
         >
           <Calendar size={13} />
@@ -152,6 +152,7 @@ function DateRangeFilter({
             onClick={() => {
               if (customStart && customEnd) {
                 onApplyCustom(customStart, customEnd);
+                setShowCustom(false);
               }
             }}
           >
@@ -293,16 +294,6 @@ function SplineSiteSessionsChart({
         <div>
           <div className="spline-title-row">
             <h3 className="card-section-title">Site Sessions</h3>
-            {selectedRange && (
-              <button
-                type="button"
-                className="reset-filter-btn"
-                onClick={() => onSelectRange('default')}
-                title="Reset to 7 days default"
-              >
-                <RotateCcw size={11} /> Reset
-              </button>
-            )}
           </div>
           <span className="spline-sub-info">{subDescription}</span>
         </div>
