@@ -379,8 +379,10 @@ function SplineSiteSessionsChart({
   );
 }
 
-// ── Overlapping Circles / Bubble Pack (Device) ───────────────────────────────
-function DeviceBubbleChart({ breakdown, isStandard }) {
+// ── Donut Chart (Device) ───────────────────────────────────────────────────
+function DeviceDonutChart({ breakdown, isStandard, unit = 'Sessions' }) {
+  const [hoveredKey, setHoveredKey] = useState(null);
+
   if (isStandard) {
     return (
       <div className="dash-box">
@@ -400,11 +402,51 @@ function DeviceBubbleChart({ breakdown, isStandard }) {
   const desktopCount = items.find((b) => b.deviceType?.toLowerCase() === 'desktop')?.count || 0;
   const mobileCount = items.find((b) => b.deviceType?.toLowerCase() === 'mobile')?.count || 0;
   const tabletCount = items.find((b) => b.deviceType?.toLowerCase() === 'tablet')?.count || 0;
-  const total = desktopCount + mobileCount + tabletCount;
 
-  const desktopPct = total > 0 ? Math.round((desktopCount / total) * 100) : 0;
-  const mobilePct = total > 0 ? Math.round((mobileCount / total) * 100) : 0;
-  const tabletPct = total > 0 ? Math.round((tabletCount / total) * 100) : 0;
+  const knownTypes = ['desktop', 'mobile', 'tablet'];
+  const otherCount = items
+    .filter((b) => !knownTypes.includes(b.deviceType?.toLowerCase()))
+    .reduce((acc, curr) => acc + (curr.count || 0), 0);
+
+  const total = desktopCount + mobileCount + tabletCount + otherCount;
+
+  const devices = [
+    { key: 'desktop', label: 'Desktop', count: desktopCount, color: '#3b82f6' },
+    { key: 'mobile', label: 'Mobile', count: mobileCount, color: '#044e43' },
+    { key: 'tablet', label: 'Tablet', count: tabletCount, color: '#f87171' },
+  ];
+
+  if (otherCount > 0) {
+    devices.push({ key: 'other', label: 'Other', count: otherCount, color: '#8b5cf6' });
+  }
+
+  devices.forEach((d) => {
+    d.pct = total > 0 ? Math.round((d.count / total) * 100) : 0;
+  });
+
+  const strokeWidth = 22;
+  const radius = 68;
+  const circumference = 2 * Math.PI * radius;
+
+  const activeDevices = devices.filter((d) => d.count > 0);
+  const gap = activeDevices.length > 1 ? 3 : 0;
+  const totalGap = gap * activeDevices.length;
+  const availableLength = Math.max(0, circumference - totalGap);
+
+  let accumulatedLength = 0;
+  const segments = activeDevices.map((d) => {
+    const fraction = total > 0 ? d.count / total : 0;
+    const arcLength = fraction * availableLength;
+    const offset = accumulatedLength;
+    accumulatedLength += arcLength + gap;
+    return {
+      ...d,
+      arcLength,
+      offset,
+    };
+  });
+
+  const activeDevice = hoveredKey ? devices.find((d) => d.key === hoveredKey) : null;
 
   return (
     <div className="dash-box">
@@ -413,41 +455,82 @@ function DeviceBubbleChart({ breakdown, isStandard }) {
         <button className="icon-btn-ghost"><MoreHorizontal size={18} /></button>
       </div>
 
-      <div className="bubble-graphic-wrap">
-        <svg viewBox="0 0 260 210" className="bubble-svg">
-          <circle cx="95" cy="95" r="72" fill="#3b82f6" />
-          <text x="95" y="103" textAnchor="middle" fill="#ffffff" fontSize="24" fontWeight="800">
-            {desktopPct}%
-          </text>
+      <div className="donut-graphic-wrap">
+        <svg viewBox="0 0 200 200" className="donut-svg">
+          {/* Background Track */}
+          <circle
+            cx="100"
+            cy="100"
+            r={radius}
+            fill="none"
+            stroke="#f1f5f9"
+            strokeWidth={strokeWidth}
+          />
 
-          <circle cx="185" cy="85" r="48" fill="#044e43" />
-          <text x="185" y="91" textAnchor="middle" fill="#ffffff" fontSize="17" fontWeight="700">
-            {mobilePct}%
-          </text>
+          {/* Active Data Segments */}
+          {total > 0 && segments.map((seg) => {
+            const isHovered = hoveredKey === seg.key;
+            return (
+              <circle
+                key={seg.key}
+                cx="100"
+                cy="100"
+                r={radius}
+                fill="none"
+                stroke={seg.color}
+                strokeWidth={isHovered ? strokeWidth + 4 : strokeWidth}
+                strokeDasharray={`${seg.arcLength} ${circumference}`}
+                strokeDashoffset={-seg.offset}
+                transform="rotate(-90 100 100)"
+                className="donut-segment"
+                onMouseEnter={() => setHoveredKey(seg.key)}
+                onMouseLeave={() => setHoveredKey(null)}
+                style={{
+                  transition: 'stroke-width 0.2s ease, opacity 0.2s ease',
+                  opacity: hoveredKey && !isHovered ? 0.45 : 1,
+                  cursor: 'pointer',
+                }}
+              />
+            );
+          })}
 
-          <circle cx="168" cy="148" r="32" fill="#f87171" />
-          <text x="168" y="153" textAnchor="middle" fill="#ffffff" fontSize="13" fontWeight="700">
-            {tabletPct}%
+          {/* Center Text */}
+          <text
+            x="100"
+            y={activeDevice ? 94 : 96}
+            textAnchor="middle"
+            fill="#0f172a"
+            fontSize={activeDevice ? 22 : 24}
+            fontWeight="800"
+          >
+            {activeDevice ? `${activeDevice.pct}%` : (total > 0 ? total.toLocaleString() : '0')}
+          </text>
+          <text
+            x="100"
+            y={activeDevice ? 114 : 116}
+            textAnchor="middle"
+            fill="#94a3b8"
+            fontSize="11"
+            fontWeight="600"
+          >
+            {activeDevice ? activeDevice.label : (total > 0 ? unit : 'No Data')}
           </text>
         </svg>
       </div>
 
       <div className="device-legend-row">
-        <div className="dev-pill">
-          <span className="dev-badge blue">●</span>
-          <span className="dev-count">{desktopCount.toLocaleString()}</span>
-          <span className="dev-name">Desktop</span>
-        </div>
-        <div className="dev-pill">
-          <span className="dev-badge green">●</span>
-          <span className="dev-count">{mobileCount.toLocaleString()}</span>
-          <span className="dev-name">Mobile</span>
-        </div>
-        <div className="dev-pill">
-          <span className="dev-badge pink">●</span>
-          <span className="dev-count">{tabletCount.toLocaleString()}</span>
-          <span className="dev-name">Tablet</span>
-        </div>
+        {devices.map((d) => (
+          <div
+            key={d.key}
+            className={`dev-pill ${hoveredKey === d.key ? 'active' : ''}`}
+            onMouseEnter={() => setHoveredKey(d.key)}
+            onMouseLeave={() => setHoveredKey(null)}
+          >
+            <span className="dev-badge" style={{ color: d.color }}>●</span>
+            <span className="dev-count">{d.count.toLocaleString()}</span>
+            <span className="dev-name">{d.label}</span>
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -801,10 +884,11 @@ export default function DashboardPage() {
 
         {/* ── RIGHT COLUMN ── */}
         <div className="dash-col-right">
-          {/* Overlapping Bubble Device Chart */}
-          <DeviceBubbleChart
+          {/* Donut Device Chart */}
+          <DeviceDonutChart
             breakdown={overview?.deviceBreakdown}
             isStandard={isStandard}
+            unit="Sessions"
           />
 
           {/* Striped Vertical Pill Bar Chart */}

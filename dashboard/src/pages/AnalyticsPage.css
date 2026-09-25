@@ -334,22 +334,42 @@
 .tooltip-val { font-size: 0.95rem; font-weight: 800; margin-left: 12px; }
 .tooltip-val.blue-text { color: #0f172a; }
 
-/* ── Device Bubble Chart ── */
-.bubble-graphic-wrap {
+/* ── Device Donut Chart ── */
+.donut-graphic-wrap, .bubble-graphic-wrap {
   display: flex;
   justify-content: center;
-  padding: 10px 0 20px;
+  align-items: center;
+  padding: 6px 0 14px;
 }
-.bubble-svg { width: 230px; height: 185px; }
+.donut-svg {
+  width: 195px;
+  height: 195px;
+  overflow: visible;
+}
+.donut-segment {
+  cursor: pointer;
+}
 
 .device-legend-row {
   display: flex;
   justify-content: space-around;
   border-top: 1px solid #f1f5f9;
-  padding-top: 16px;
+  padding-top: 14px;
 }
 
-.dev-pill { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.dev-pill {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 8px;
+  transition: all 0.15s ease;
+}
+.dev-pill:hover, .dev-pill.active {
+  background: #f8fafc;
+}
 .dev-badge { font-size: 0.8rem; line-height: 1; }
 .dev-badge.blue { color: #3b82f6; }
 .dev-badge.green { color: #044e43; }
