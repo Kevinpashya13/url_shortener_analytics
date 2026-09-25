@@ -8,11 +8,12 @@ async function logClick(urlId, req) {
     const userAgent = req.headers['user-agent'] || '';
     const referrer = req.headers['referer'] || req.headers['referrer'] || null;
     const ip = req.headers['x-forwarded-for']?.split(',')[0] || req.socket.remoteAddress;
+    const isLocalIp = !ip || ip === '::1' || ip === '127.0.0.1' || ip.startsWith('::ffff:127.') || ip.startsWith('192.168.') || ip.startsWith('10.');
 
     const parser = new UAParser(userAgent);
     const uaResult = parser.getResult();
 
-    const geo = geoip.lookup(ip);
+    const geo = isLocalIp ? { country: 'ID' } : geoip.lookup(ip);
 
     // Check owner's monthly click tracking quota before logging
     const url = await prisma.url.findUnique({

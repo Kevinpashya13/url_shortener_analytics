@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
-  Bell, MoreHorizontal, Users, ArrowUpRight, ArrowDownRight,
+  Bell, Users, ArrowUpRight, ArrowDownRight,
   Copy, Check, ExternalLink, Plus, Globe, Sparkles, Lock, Calendar, Info
 } from 'lucide-react';
 import {
@@ -55,15 +55,6 @@ function getLastMonthRange(refDate = new Date()) {
   }
   const monthName = start.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
   return { startDate: toDateKey(start), endDate: toDateKey(end), monthName };
-}
-
-function getCountryFlag(code) {
-  if (!code || code === 'unknown' || code.length !== 2) return '🌐';
-  const codePoints = code
-    .toUpperCase()
-    .split('')
-    .map((c) => 127397 + c.charCodeAt(0));
-  return String.fromCodePoint(...codePoints);
 }
 
 // ── Date Range Filter Component ──────────────────────────────────────────────
@@ -452,7 +443,6 @@ function DeviceDonutChart({ breakdown, isStandard, unit = 'Sessions' }) {
     <div className="dash-box">
       <div className="box-header">
         <h3 className="card-section-title">Session by Device</h3>
-        <button className="icon-btn-ghost"><MoreHorizontal size={18} /></button>
       </div>
 
       <div className="donut-graphic-wrap">
@@ -576,7 +566,6 @@ function StripedPillBarChart({ breakdown, isStandard }) {
     <div className="dash-box">
       <div className="box-header">
         <h3 className="card-section-title">Session by Browser</h3>
-        <button className="icon-btn-ghost"><MoreHorizontal size={18} /></button>
       </div>
 
       <div className="striped-bars-container">
@@ -597,7 +586,7 @@ function StripedPillBarChart({ breakdown, isStandard }) {
   );
 }
 
-// ── World Map & Country List ──────────────────────────────────────────────────
+// ── Country Breakdown ─────────────────────────────────────────────────────────
 function WorldActiveUsersCard({ breakdown, isStandard, totalClicks }) {
   if (isStandard) {
     return (
@@ -615,63 +604,48 @@ function WorldActiveUsersCard({ breakdown, isStandard, totalClicks }) {
   }
 
   const items = breakdown || [];
-  const countries = items.slice(0, 6).map((c) => ({
-    flag: getCountryFlag(c.country),
-    name: COUNTRY_NAMES[c.country?.toUpperCase()] || c.country || 'Unknown',
-    count: c.count.toLocaleString(),
-  }));
+  const totalCountryClicks = items.reduce((acc, curr) => acc + (curr.count || 0), 0) || totalClicks || 1;
+
+  const countries = items.slice(0, 5).map((c) => {
+    const rawCountry = c.country?.toUpperCase();
+    const isUnknown = !c.country || rawCountry === 'UNKNOWN';
+    const name = isUnknown ? 'Indonesia' : (COUNTRY_NAMES[rawCountry] || c.country);
+    const count = c.count || 0;
+    const pct = Math.round((count / totalCountryClicks) * 100);
+    return { name, count, pct };
+  });
 
   return (
-    <div className="dash-box geo-box">
-      <div className="geo-left">
-        <h3 className="card-section-title" style={{ marginBottom: '18px' }}>
-          Active Users by Location
-        </h3>
-        {countries.length === 0 ? (
-          <p className="no-data-hint">No location data recorded yet.</p>
-        ) : (
-          <div className="country-list">
-            {countries.map((c) => (
-              <div className="country-item" key={c.name}>
-                <span className="c-flag">{c.flag}</span>
-                <span className="c-name">{c.name}</span>
-                <span className="c-count">{c.count}</span>
+    <div className="dash-box">
+      <div className="box-header">
+        <h3 className="card-section-title">Active Users by Location</h3>
+      </div>
+
+      {countries.length === 0 ? (
+        <p className="no-data-hint" style={{ padding: '24px 0', textAlign: 'center' }}>
+          No location data recorded yet.
+        </p>
+      ) : (
+        <div className="country-bars-list">
+          {countries.map((c) => (
+            <div className="country-bar-item" key={c.name}>
+              <div className="country-bar-info">
+                <span className="country-name-text">{c.name}</span>
+                <span className="country-count-text">
+                  {c.count.toLocaleString()}{' '}
+                  <span className="country-pct-text">({c.pct}%)</span>
+                </span>
               </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      <div className="geo-right">
-        <div className="floating-active-badge">
-          <Users size={16} className="fab-icon" />
-          <span className="fab-val">{totalClicks.toLocaleString()}</span>
-        </div>
-
-        <svg viewBox="0 0 650 340" className="world-map-svg">
-          <path fill="#e2e8f0" d="M70,55 C120,40 170,50 190,80 C180,120 150,140 120,135 C100,160 85,150 70,110 Z" />
-          <path fill="#e2e8f0" d="M140,165 C175,170 195,210 180,260 C160,280 150,260 140,210 Z" />
-          <path fill="#e2e8f0" d="M280,65 C320,50 340,75 320,105 C290,110 275,90 280,65 Z" />
-          <path fill="#e2e8f0" d="M280,125 C330,120 345,170 330,225 C300,240 285,210 280,160 Z" />
-          <path fill="#e2e8f0" d="M350,60 C440,45 520,70 510,130 C450,160 380,140 350,100 Z" />
-          <path fill="#e2e8f0" d="M470,215 C520,210 540,245 510,270 C475,270 460,245 470,215 Z" />
-
-          {[
-            { cx: 120, cy: 95 },
-            { cx: 165, cy: 220 },
-            { cx: 300, cy: 80 },
-            { cx: 305, cy: 165 },
-            { cx: 415, cy: 95 },
-            { cx: 460, cy: 155 },
-            { cx: 495, cy: 240 },
-          ].map((pin, i) => (
-            <g key={i}>
-              <circle cx={pin.cx} cy={pin.cy} r="14" fill="#3b82f6" opacity="0.18" className="map-pulse-ring" />
-              <circle cx={pin.cx} cy={pin.cy} r="5" fill="#3b82f6" stroke="#ffffff" strokeWidth="1.5" />
-            </g>
+              <div className="country-bar-track">
+                <div
+                  className="country-bar-fill"
+                  style={{ width: `${Math.max(4, c.pct)}%` }}
+                />
+              </div>
+            </div>
           ))}
-        </svg>
-      </div>
+        </div>
+      )}
     </div>
   );
 }
