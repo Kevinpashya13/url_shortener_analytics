@@ -283,6 +283,37 @@
 
 .legend-dot.pink { background: #f472b6; }
 
+.spline-chart-canvas {
+  position: relative;
+  width: 100%;
+}
+
+.chart-empty-hint {
+  position: absolute;
+  top: 48%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(4px);
+  border: 1px solid #e2e8f0;
+  padding: 8px 18px;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #64748b;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.04);
+  pointer-events: none;
+  z-index: 10;
+}
+
+.empty-hint-icon {
+  color: #94a3b8;
+  flex-shrink: 0;
+}
+
 /* Floating Tooltip */
 .spline-tooltip-card {
   position: absolute;

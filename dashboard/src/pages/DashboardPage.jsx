@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   Bell, MoreHorizontal, Users, ArrowUpRight, ArrowDownRight,
-  Copy, Check, ExternalLink, Plus, Globe, Sparkles, Lock, Calendar
+  Copy, Check, ExternalLink, Plus, Globe, Sparkles, Lock, Calendar, Info
 } from 'lucide-react';
 import {
   createShortUrl, getMyUrls, getAccountMe,
@@ -36,24 +36,7 @@ function toDateKey(date) {
   return `${year}-${month}-${day}`;
 }
 
-export function getLastWeekRange(refDate = new Date()) {
-  const now = new Date(refDate);
-  const dayOfWeek = now.getDay(); // 0 is Sunday, 1 is Mon, ..., 6 is Sat
-  const end = new Date(now);
-  if (dayOfWeek === 0) {
-    // Sunday: current week is completed
-  } else {
-    // Monday to Saturday: previous week ended on preceding Sunday
-    end.setDate(now.getDate() - dayOfWeek);
-  }
-  end.setHours(23, 59, 59, 999);
-  const start = new Date(end);
-  start.setDate(end.getDate() - 6);
-  start.setHours(0, 0, 0, 0);
-  return { startDate: toDateKey(start), endDate: toDateKey(end) };
-}
-
-export function getLastMonthRange(refDate = new Date()) {
+function getLastMonthRange(refDate = new Date()) {
   const now = new Date(refDate);
   const year = now.getFullYear();
   const month = now.getMonth();
@@ -70,7 +53,8 @@ export function getLastMonthRange(refDate = new Date()) {
     start = new Date(year, month - 1, 1);
     end = new Date(year, month - 1, prevMonthLastDay, 23, 59, 59, 999);
   }
-  return { startDate: toDateKey(start), endDate: toDateKey(end) };
+  const monthName = start.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+  return { startDate: toDateKey(start), endDate: toDateKey(end), monthName };
 }
 
 function getCountryFlag(code) {
@@ -98,7 +82,6 @@ function DateRangeFilter({
     <div className="date-filter-box">
       <div className="date-presets-row">
         {[
-          { id: 'last_week', label: 'Last Week' },
           { id: 'last_month', label: 'Last Month' },
           { id: 'all', label: 'All Time' },
         ].map((p) => (
@@ -274,14 +257,13 @@ function SplineSiteSessionsChart({
     }
   }
 
+  const isAllZero = days.length > 0 && days.every((d) => d.count === 0);
+
   // Range description text
   let subDescription = 'Showing last 7 days (default)';
-  if (selectedRange === 'last_week') {
-    const r = getLastWeekRange();
-    subDescription = `Last Week (${r.startDate} to ${r.endDate})`;
-  } else if (selectedRange === 'last_month') {
+  if (selectedRange === 'last_month') {
     const r = getLastMonthRange();
-    subDescription = `Last Month (${r.startDate} to ${r.endDate})`;
+    subDescription = r.monthName;
   } else if (selectedRange === 'all') {
     subDescription = 'All time traffic';
   } else if (selectedRange === 'custom' && customStart && customEnd) {
@@ -384,6 +366,12 @@ function SplineSiteSessionsChart({
               {days[hoveredIdx].count.toLocaleString()}{' '}
               {days[hoveredIdx].count === 1 ? 'click' : 'clicks'}
             </div>
+          </div>
+        )}
+        {isAllZero && (
+          <div className="chart-empty-hint">
+            <Info size={14} className="empty-hint-icon" />
+            <span>Belum ada sesi tercatat pada periode ini</span>
           </div>
         )}
       </div>
@@ -680,10 +668,7 @@ export default function DashboardPage() {
 
     setSelectedRange(rangeId);
 
-    if (rangeId === 'last_week') {
-      const { startDate, endDate } = getLastWeekRange();
-      fetchOverview({ startDate, endDate });
-    } else if (rangeId === 'last_month') {
+    if (rangeId === 'last_month') {
       const { startDate, endDate } = getLastMonthRange();
       fetchOverview({ startDate, endDate });
     } else if (rangeId === 'all') {
