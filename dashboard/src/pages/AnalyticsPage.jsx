@@ -8,22 +8,16 @@ import { getAnalytics } from '../api/url';
 import { useAuth } from '../context/AuthContext';
 import './AnalyticsPage.css';
 
-const COUNTRY_NAMES = {
-  US: 'United States',
-  ID: 'Indonesia',
-  BR: 'Brazil',
-  GB: 'United Kingdom',
-  ES: 'Spain',
-  AR: 'Argentina',
-  DE: 'Germany',
-  FR: 'France',
-  JP: 'Japan',
-  SG: 'Singapore',
-  IN: 'India',
-  NL: 'Netherlands',
-  CA: 'Canada',
-  AU: 'Australia',
-};
+const regionNames = new Intl.DisplayNames(['en'], { type: 'region' });
+
+function getCountryName(code) {
+  if (!code || code.toLowerCase() === 'unknown') return 'Indonesia';
+  try {
+    return regionNames.of(code.toUpperCase()) || code;
+  } catch {
+    return code;
+  }
+}
 
 function toDateKey(date) {
   const d = new Date(date);
@@ -519,8 +513,8 @@ function DeviceDonutChart({ breakdown, isStandard, unit = 'Clicks' }) {
   );
 }
 
-// ── Striped Vertical Pill Bar Chart (Browser) ────────────────────────────────
-function StripedPillBarChart({ breakdown, isStandard }) {
+// ── Browser Breakdown ────────────────────────────────────────────────────────
+function BrowserBreakdownCard({ breakdown, isStandard }) {
   if (isStandard) {
     return (
       <div className="dash-box">
@@ -537,23 +531,20 @@ function StripedPillBarChart({ breakdown, isStandard }) {
   }
 
   const items = breakdown || [];
-  const defaultBrowsers = ['Chrome', 'Safari', 'Firefox', 'Edge'];
+  const totalBrowserClicks = items.reduce((acc, curr) => acc + (curr.count || 0), 0) || 1;
 
-  const bars = defaultBrowsers.map((bName, idx) => {
-    const found = items.find((b) => b.browser?.toLowerCase().includes(bName.toLowerCase()));
-    const val = found ? found.count : 0;
-    return {
-      label: bName,
-      val: val.toLocaleString(),
-      count: val,
-      colorClass: ['bar-pink', 'bar-blue', 'bar-teal', 'bar-red'][idx],
-    };
-  });
-
-  const maxVal = Math.max(...bars.map((b) => b.count), 1);
-  bars.forEach((b) => {
-    b.heightPct = b.count > 0 ? Math.max(12, Math.round((b.count / maxVal) * 95)) : 8;
-  });
+  const browsers = items
+    .filter((b) => b.browser && b.count > 0)
+    .slice(0, 5)
+    .map((b) => {
+      const name = b.browser === 'unknown' ? 'Unknown Browser' : b.browser;
+      const pct = Math.round((b.count / totalBrowserClicks) * 100);
+      return {
+        name,
+        count: b.count,
+        pct,
+      };
+    });
 
   return (
     <div className="dash-box">
@@ -561,20 +552,31 @@ function StripedPillBarChart({ breakdown, isStandard }) {
         <h3 className="card-section-title">Session by Browser</h3>
       </div>
 
-      <div className="striped-bars-container">
-        {bars.map((bar) => (
-          <div className="striped-col" key={bar.label}>
-            <span className="col-val">{bar.val}</span>
-            <div className="col-track">
-              <div
-                className={`col-fill-striped ${bar.colorClass}`}
-                style={{ height: `${bar.heightPct}%` }}
-              />
+      {browsers.length === 0 ? (
+        <p className="no-data-hint" style={{ padding: '24px 0', textAlign: 'center' }}>
+          No browser data recorded yet.
+        </p>
+      ) : (
+        <div className="browser-bars-list">
+          {browsers.map((b) => (
+            <div className="browser-bar-item" key={b.name}>
+              <div className="browser-bar-info">
+                <span className="browser-name-text">{b.name}</span>
+                <span className="browser-count-text">
+                  {b.count.toLocaleString()}{' '}
+                  <span className="browser-pct-text">({b.pct}%)</span>
+                </span>
+              </div>
+              <div className="browser-bar-track">
+                <div
+                  className="browser-bar-fill"
+                  style={{ width: `${Math.max(4, b.pct)}%` }}
+                />
+              </div>
             </div>
-            <span className="col-label">{bar.label}</span>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -600,9 +602,7 @@ function WorldActiveUsersCard({ breakdown, isStandard, totalClicks }) {
   const totalCountryClicks = items.reduce((acc, curr) => acc + (curr.count || 0), 0) || totalClicks || 1;
 
   const countries = items.slice(0, 5).map((c) => {
-    const rawCountry = c.country?.toUpperCase();
-    const isUnknown = !c.country || rawCountry === 'UNKNOWN';
-    const name = isUnknown ? 'Indonesia' : (COUNTRY_NAMES[rawCountry] || c.country);
+    const name = getCountryName(c.country);
     const count = c.count || 0;
     const pct = Math.round((count / totalCountryClicks) * 100);
     return { name, count, pct };
@@ -851,8 +851,8 @@ export default function AnalyticsPage() {
             unit="Clicks"
           />
 
-          {/* Striped Vertical Pill Bar Chart */}
-          <StripedPillBarChart
+          {/* Browser Breakdown Card */}
+          <BrowserBreakdownCard
             breakdown={data.browserBreakdown}
             isStandard={isStandard}
           />

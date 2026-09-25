@@ -377,60 +377,57 @@
 .dev-count { font-size: 0.92rem; font-weight: 800; color: #0f172a; }
 .dev-name { font-size: 0.75rem; color: #94a3b8; }
 
-/* ── Striped Vertical Bars ── */
-.striped-bars-container {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-end;
-  height: 220px;
-  padding: 10px 10px 0;
-}
-
-.striped-col {
+/* ── Browser Breakdown List ── */
+.browser-bars-list {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  width: 44px;
-  height: 100%;
+  gap: 16px;
+  padding: 6px 0 4px;
 }
 
-.col-val {
-  font-size: 0.8rem;
+.browser-bar-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.browser-bar-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.88rem;
+}
+
+.browser-name-text {
+  font-weight: 600;
+  color: #334155;
+}
+
+.browser-count-text {
   font-weight: 700;
   color: #0f172a;
 }
 
-.col-track {
-  flex: 1;
-  width: 100%;
-  display: flex;
-  align-items: flex-end;
-}
-
-.col-fill-striped {
-  width: 100%;
-  border-radius: 999px;
-  transition: height 0.6s ease;
-}
-
-.bar-pink {
-  background: repeating-linear-gradient(45deg, #fca5a5, #fca5a5 5px, #f87171 5px, #f87171 10px);
-}
-.bar-blue {
-  background: repeating-linear-gradient(45deg, #3b82f6, #3b82f6 5px, #2563eb 5px, #2563eb 10px);
-}
-.bar-teal {
-  background: repeating-linear-gradient(45deg, #047857, #047857 5px, #065f46 5px, #065f46 10px);
-}
-.bar-red {
-  background: repeating-linear-gradient(45deg, #ef4444, #ef4444 5px, #dc2626 5px, #dc2626 10px);
-}
-
-.col-label {
-  font-size: 0.75rem;
+.browser-pct-text {
+  font-weight: 500;
   color: #94a3b8;
-  font-weight: 600;
+  font-size: 0.78rem;
+  margin-left: 4px;
+}
+
+.browser-bar-track {
+  width: 100%;
+  height: 8px;
+  background: #f1f5f9;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.browser-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #6366f1, #818cf8);
+  border-radius: 999px;
+  transition: width 0.5s ease;
 }
 
 /* ── Country Breakdown List ── */
