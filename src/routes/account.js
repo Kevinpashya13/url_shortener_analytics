@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const jwt = require('jsonwebtoken');
 const prisma = require('../config/prisma');
 const { authenticate } = require('../middlewares/auth');
 const { getLimits } = require('../config/planLimits');
@@ -60,6 +61,9 @@ router.get('/account/me', authenticate, async (req, res) => {
       },
       features: {
         customAlias: limits.customAlias,
+        renameAlias: limits.renameAlias,
+        editDestination: limits.editDestination,
+        deleteUrl: limits.deleteUrl,
         expiry: limits.expiry,
         fullAnalytics: limits.fullAnalytics,
         fallback: limits.fallback,
@@ -91,9 +95,16 @@ router.post('/account/upgrade', authenticate, async (req, res) => {
       select: { id: true, email: true, role: true },
     });
 
+    const token = jwt.sign(
+      { userId: updated.id, email: updated.email, role: updated.role },
+      process.env.JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+
     res.status(200).json({
       message: `Account successfully upgraded to ${role}`,
       user: updated,
+      token,
     });
   } catch (err) {
     console.error(err);

@@ -1,41 +1,26 @@
+import { Fragment } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { Check, X, Sparkles } from 'lucide-react';
 import './PricingPage.css';
 
 const PLANS = [
   {
     key: 'STANDARD',
-    name: 'Standard',
-    price: 'Free',
-    tagline: 'Perfect to get started',
-    color: '#6b7280',
-    features: [
-      '50 URLs / month',
-      '1,000 click tracks / month',
-      'Total clicks + daily chart',
-      '—  Custom alias',
-      '—  Link expiry',
-      '—  Full analytics',
-      '—  Custom fallback URL',
-    ],
-    cta: 'Current free plan',
+    name: 'Free',
+    price: '$0',
+    tagline: 'For personal testing',
+    color: '#94a3b8',
+    cta: 'Current Plan',
     ctaStyle: 'gray',
   },
   {
     key: 'PRO',
     name: 'Pro',
     price: 'Paid',
-    tagline: 'For power users & creators',
+    tagline: 'For creators & growth',
     color: '#6366f1',
     highlight: true,
-    features: [
-      '1,000 URLs / month',
-      '5,000 click tracks / month',
-      'Full analytics (device, browser, location, referrer)',
-      'Custom alias',
-      'Link expiry (date & time)',
-      '—  Custom fallback URL',
-    ],
     cta: 'Upgrade to Pro',
     ctaStyle: 'pro',
     targetRole: 'PRO',
@@ -44,91 +29,124 @@ const PLANS = [
     key: 'PREMIUM',
     name: 'Premium',
     price: 'Paid',
-    tagline: 'Maximum power & flexibility',
+    tagline: 'Maximum volume & power',
     color: '#a855f7',
-    features: [
-      '5,000 URLs / month',
-      '500,000 click tracks / month',
-      'Full analytics — all features',
-      'Custom alias',
-      'Link expiry (date & time)',
-      'Custom fallback URL (expired link redirect)',
-    ],
     cta: 'Upgrade to Premium',
     ctaStyle: 'premium',
     targetRole: 'PREMIUM',
   },
 ];
 
+const FEATURES_TABLE = [
+  {
+    category: 'Quotas & Usage',
+    items: [
+      { label: 'Monthly Short Links', free: '25 URLs / mo', pro: '150 URLs / mo', premium: '1,000 URLs / mo' },
+      { label: 'Monthly Click Tracking', free: '1,000 clicks', pro: '5,000 clicks', premium: '100,000 clicks (100k)' },
+    ],
+  },
+  {
+    category: 'Link Customization & Management',
+    items: [
+      { label: 'Custom Alias', free: true, pro: true, premium: true },
+      { label: 'Rename Alias (Keeps Analytics)', free: true, pro: true, premium: true },
+      { label: 'Edit Destination URL', free: false, pro: true, premium: true },
+      { label: 'Delete Short Links', free: false, pro: true, premium: true },
+      { label: 'Link Expiry Date', free: false, pro: true, premium: true },
+    ],
+  },
+  {
+    category: 'Analytics & Automation',
+    items: [
+      { label: 'Analytics Depth', free: 'Basic (Total & Daily)', pro: 'Full (Geo, Device, Browser)', premium: 'Full (Geo, Device, Browser)' },
+      { label: 'Custom Fallback URL (on expired)', free: false, pro: false, premium: true },
+    ],
+  },
+];
+
 export default function PricingPage() {
   const { user } = useAuth();
-  const currentRole = user?.role || null;
+  const currentRole = user?.role || 'STANDARD';
+
+  const renderValue = (val) => {
+    if (typeof val === 'boolean') {
+      return val ? (
+        <span className="table-check"><Check size={18} /></span>
+      ) : (
+        <span className="table-cross"><X size={18} /></span>
+      );
+    }
+    return <span className="table-text-val">{val}</span>;
+  };
 
   return (
     <div className="pricing">
       <div className="pricing-hero">
-        <h1 className="pricing-title">Simple, Transparent Pricing</h1>
+        <h1 className="pricing-title">Compare Plans & Features</h1>
         <p className="pricing-subtitle">
-          Start for free. Upgrade anytime to unlock powerful features.
+          Choose the plan that fits your link shortening and analytics scale.
         </p>
       </div>
 
-      <div className="pricing-grid">
-        {PLANS.map((plan) => {
-          const isCurrent = currentRole === plan.key;
-          return (
-            <div
-              key={plan.key}
-              className={`plan-card ${plan.highlight ? 'plan-highlight' : ''}`}
-              style={{ '--plan-color': plan.color }}
-            >
-              {plan.highlight && <div className="plan-popular">Most Popular</div>}
-              <div className="plan-header">
-                <h2 className="plan-name" style={{ color: plan.color }}>{plan.name}</h2>
-                <p className="plan-price">{plan.price}</p>
-                <p className="plan-tagline">{plan.tagline}</p>
-              </div>
-
-              <ul className="plan-features">
-                {plan.features.map((f) => (
-                  <li key={f} className={`plan-feature ${f.startsWith('—') ? 'plan-feature-locked' : ''}`}>
-                    {f.startsWith('—') ? (
-                      <>
-                        <span className="feat-icon locked">✕</span>
-                        <span>{f.slice(2)}</span>
-                      </>
-                    ) : (
-                      <>
-                        <span className="feat-icon">✓</span>
-                        <span>{f}</span>
-                      </>
+      <div className="pricing-table-wrapper">
+        <table className="pricing-table">
+          <thead>
+            <tr>
+              <th className="th-features">Plan Overview</th>
+              {PLANS.map((plan) => {
+                const isCurrent = currentRole === plan.key;
+                return (
+                  <th key={plan.key} className={`th-plan ${plan.highlight ? 'th-highlight' : ''}`}>
+                    {plan.highlight && (
+                      <div className="table-popular-tag">
+                        <Sparkles size={12} /> Most Popular
+                      </div>
                     )}
-                  </li>
+                    <div className="table-plan-name" style={{ color: plan.color }}>{plan.name}</div>
+                    <div className="table-plan-price">{plan.price}</div>
+                    <div className="table-plan-tagline">{plan.tagline}</div>
+                    <div className="table-plan-cta">
+                      {isCurrent ? (
+                        <span className="cta-current-badge">✓ Current plan</span>
+                      ) : !user ? (
+                        <Link to="/register" className={`table-cta-btn cta-${plan.ctaStyle}`}>
+                          Get Started
+                        </Link>
+                      ) : plan.targetRole ? (
+                        <Link
+                          to="/dashboard"
+                          state={{ upgradeRole: plan.targetRole }}
+                          className={`table-cta-btn cta-${plan.ctaStyle}`}
+                        >
+                          {plan.cta}
+                        </Link>
+                      ) : (
+                        <span className="cta-current-badge">✓ Current plan</span>
+                      )}
+                    </div>
+                  </th>
+                );
+              })}
+            </tr>
+          </thead>
+          <tbody>
+            {FEATURES_TABLE.map((section, sIdx) => (
+              <Fragment key={sIdx}>
+                <tr className="table-section-row">
+                  <td colSpan={4}>{section.category}</td>
+                </tr>
+                {section.items.map((item, iIdx) => (
+                  <tr key={iIdx} className="table-data-row">
+                    <td className="td-feature-name">{item.label}</td>
+                    <td className="td-val">{renderValue(item.free)}</td>
+                    <td className="td-val td-highlight">{renderValue(item.pro)}</td>
+                    <td className="td-val">{renderValue(item.premium)}</td>
+                  </tr>
                 ))}
-              </ul>
-
-              <div className="plan-cta">
-                {isCurrent ? (
-                  <span className="cta-current">✓ Your current plan</span>
-                ) : !user ? (
-                  <Link to="/register" className={`cta-btn cta-${plan.ctaStyle}`}>
-                    {plan.cta}
-                  </Link>
-                ) : plan.targetRole ? (
-                  <Link
-                    to="/dashboard"
-                    state={{ upgradeRole: plan.targetRole }}
-                    className={`cta-btn cta-${plan.ctaStyle}`}
-                  >
-                    {plan.cta}
-                  </Link>
-                ) : (
-                  <span className="cta-current">✓ Your current plan</span>
-                )}
-              </div>
-            </div>
-          );
-        })}
+              </Fragment>
+            ))}
+          </tbody>
+        </table>
       </div>
 
       {!user && (
@@ -139,4 +157,3 @@ export default function PricingPage() {
     </div>
   );
 }
-

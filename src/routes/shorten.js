@@ -19,12 +19,6 @@ router.post(
     const limits = req.planLimits;
 
     // Feature gates — return 403 if feature not allowed for this plan
-    if (customAlias && !limits.customAlias) {
-      return res.status(403).json({
-        error: 'Custom alias is not available on your current plan',
-        requiredPlan: 'PRO',
-      });
-    }
 
     if (expiredAt && !limits.expiry) {
       return res.status(403).json({

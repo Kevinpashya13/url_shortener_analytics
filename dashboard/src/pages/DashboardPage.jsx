@@ -2,11 +2,11 @@ import { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   Bell, Users, ArrowUpRight, ArrowDownRight,
-  Copy, Check, ExternalLink, Plus, Globe, Sparkles, Lock, Calendar, Info
+  Copy, Check, ExternalLink, Plus, Globe, Sparkles, Lock, Calendar, Info, Trash2, Pencil, X
 } from 'lucide-react';
 import {
   createShortUrl, getMyUrls, getAccountMe,
-  getAccountAnalyticsOverview, upgradeAccount
+  getAccountAnalyticsOverview, upgradeAccount, deleteShortUrl, updateShortUrl
 } from '../api/url';
 import { useAuth } from '../context/AuthContext';
 import './DashboardPage.css';
@@ -671,6 +671,11 @@ export default function DashboardPage() {
   const [success, setSuccess] = useState('');
   const [copied, setCopied] = useState('');
 
+  const [editingUrl, setEditingUrl] = useState(null);
+  const [editAlias, setEditAlias] = useState('');
+  const [editDestination, setEditDestination] = useState('');
+  const [editLoading, setEditLoading] = useState(false);
+
   const role = user?.role || 'STANDARD';
   const isStandard = role === 'STANDARD';
   const features = account?.features || {};
@@ -757,6 +762,52 @@ export default function DashboardPage() {
       fetchData();
     } catch (err) {
       setError(err.response?.data?.error || 'Failed to create short URL');
+    }
+  };
+
+  const handleStartEdit = (u) => {
+    setEditingUrl(u);
+    setEditAlias(u.shortCode);
+    setEditDestination(u.originalUrl);
+  };
+
+  const handleSaveEdit = async (e) => {
+    e.preventDefault();
+    if (!editingUrl) return;
+    setEditLoading(true);
+    try {
+      await updateShortUrl(editingUrl.shortCode, {
+        newAlias: editAlias !== editingUrl.shortCode ? editAlias : undefined,
+        originalUrl: features.editDestination ? editDestination : undefined,
+      });
+      const [urlsRes, meRes] = await Promise.all([getMyUrls(), getAccountMe()]);
+      setUrls(urlsRes.data);
+      setAccount(meRes.data);
+      setSuccess('Short link updated successfully.');
+      setEditingUrl(null);
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (err) {
+      setError(err.response?.data?.error || 'Failed to update short URL');
+      setTimeout(() => setError(''), 4000);
+    } finally {
+      setEditLoading(false);
+    }
+  };
+
+  const handleDelete = async (shortCode) => {
+    if (!window.confirm(`Are you sure you want to delete /${shortCode}? This link will be deactivated immediately.`)) {
+      return;
+    }
+    try {
+      await deleteShortUrl(shortCode);
+      const [urlsRes, meRes] = await Promise.all([getMyUrls(), getAccountMe()]);
+      setUrls(urlsRes.data);
+      setAccount(meRes.data);
+      setSuccess(`Link /${shortCode} deleted successfully.`);
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (err) {
+      setError(err.response?.data?.error || 'Failed to delete URL');
+      setTimeout(() => setError(''), 3000);
     }
   };
 
@@ -898,20 +949,13 @@ export default function DashboardPage() {
             </div>
 
             <div className="form-options-row">
-              {features.customAlias ? (
-                <input
-                  type="text"
-                  placeholder="Custom alias (optional)"
-                  value={customAlias}
-                  onChange={(e) => setCustomAlias(e.target.value)}
-                  className="input-sub"
-                />
-              ) : (
-                <div className="locked-pill">
-                  <span>Custom Alias</span>
-                  <Link to="/pricing" className="pill-badge">Pro ↑</Link>
-                </div>
-              )}
+              <input
+                type="text"
+                placeholder="Custom alias (optional)"
+                value={customAlias}
+                onChange={(e) => setCustomAlias(e.target.value)}
+                className="input-sub"
+              />
 
               {features.expiry ? (
                 <input
@@ -1000,6 +1044,24 @@ export default function DashboardPage() {
                             <Link to={`/analytics/${u.shortCode}`} className="table-analytics-btn">
                               Analytics <ExternalLink size={12} />
                             </Link>
+                            <button
+                              type="button"
+                              onClick={() => handleStartEdit(u)}
+                              className="table-edit-btn"
+                              title="Edit link"
+                            >
+                              <Pencil size={13} />
+                            </button>
+                            {features.deleteUrl && (
+                              <button
+                                type="button"
+                                onClick={() => handleDelete(u.shortCode)}
+                                className="table-delete-btn"
+                                title="Delete short link"
+                              >
+                                <Trash2 size={13} />
+                              </button>
+                            )}
                           </div>
                         </td>
                       </tr>
@@ -1011,6 +1073,81 @@ export default function DashboardPage() {
           )}
         </div>
       </div>
+
+      {/* Edit Link Modal */}
+      {editingUrl && (
+        <div className="modal-overlay" onClick={() => setEditingUrl(null)}>
+          <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>Edit Short Link</h3>
+              <button
+                type="button"
+                className="modal-close-btn"
+                onClick={() => setEditingUrl(null)}
+              >
+                <X size={18} />
+              </button>
+            </div>
+            <form onSubmit={handleSaveEdit} className="modal-form">
+              <div className="modal-field">
+                <label>Custom Alias</label>
+                <div className="modal-input-prefix">
+                  <span className="prefix-domain">{window.location.host}/</span>
+                  <input
+                    type="text"
+                    value={editAlias}
+                    onChange={(e) => setEditAlias(e.target.value)}
+                    placeholder="my-alias"
+                    required
+                  />
+                </div>
+                <span className="field-hint">All users can rename their short link alias.</span>
+              </div>
+
+              <div className="modal-field">
+                <div className="field-label-row">
+                  <label>Destination URL</label>
+                  {!features.editDestination && (
+                    <Link to="/pricing" className="pill-badge">Pro ↑</Link>
+                  )}
+                </div>
+                <input
+                  type="url"
+                  value={editDestination}
+                  onChange={(e) => setEditDestination(e.target.value)}
+                  disabled={!features.editDestination}
+                  className={!features.editDestination ? 'input-locked' : ''}
+                  required
+                />
+                {!features.editDestination ? (
+                  <span className="field-hint text-warning">
+                    Upgrading to Pro or Premium is required to change destination URL.
+                  </span>
+                ) : (
+                  <span className="field-hint">Traffic will redirect to this updated URL.</span>
+                )}
+              </div>
+
+              <div className="modal-actions">
+                <button
+                  type="button"
+                  className="btn-cancel"
+                  onClick={() => setEditingUrl(null)}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="btn-save"
+                  disabled={editLoading}
+                >
+                  {editLoading ? 'Saving...' : 'Save Changes'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

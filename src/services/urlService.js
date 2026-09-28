@@ -45,7 +45,7 @@ async function getOriginalUrl(shortCode) {
 
   const url = await prisma.url.findUnique({ where: { shortCode } });
 
-  if (!url) return null;
+  if (!url || url.isDeleted) return null;
 
   if (url.expiredAt && new Date() > url.expiredAt) {
     return url.fallbackUrl

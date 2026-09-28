@@ -41,6 +41,7 @@ model Url {
   clickLogs    ClickLog[]
   userId       Int?
   user         User?       @relation(fields: [userId], references: [id])
+  isDeleted    Boolean     @default(false)
 
   @@map("urls")
 }

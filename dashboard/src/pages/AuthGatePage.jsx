@@ -39,7 +39,7 @@ export default function AuthGatePage() {
         </div>
 
         <div className="authgate-perks">
-          <div className="authgate-perk">✅ 50 free links/month</div>
+          <div className="authgate-perk">✅ 25 free links/month</div>
           <div className="authgate-perk">✅ Click analytics</div>
           <div className="authgate-perk">✅ No credit card required</div>
         </div>

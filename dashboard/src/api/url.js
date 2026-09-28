@@ -16,3 +16,5 @@ export const getAccountAnalyticsOverview = (params = {}) =>
   api.get('/account/analytics-overview', { params });
 
 export const upgradeAccount = (role) => api.post('/account/upgrade', { role });
+export const deleteShortUrl = (shortCode) => api.delete(`/urls/${shortCode}`);
+export const updateShortUrl = (shortCode, data) => api.patch(`/urls/${shortCode}`, data);
