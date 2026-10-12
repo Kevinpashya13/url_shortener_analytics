@@ -1,8 +1,14 @@
-import { BarChart2, MapPin, Monitor, Globe, ExternalLink, Clock } from 'lucide-react';
+import { BarChart2, MapPin, Monitor, Globe, ExternalLink, Clock, QrCode } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import './FeaturesPage.css';
 
 const ANALYTICS_ITEMS = [
+  {
+    Icon: QrCode,
+    title: 'Instant QR Code Generator',
+    desc: 'One-click high-resolution PNG QR code creation for every link, perfect for print merchandise, brochures, and offline campaigns.',
+    plan: 'All plans',
+  },
   {
     Icon: BarChart2,
     title: 'Total Click Count',

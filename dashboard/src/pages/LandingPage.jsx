@@ -2,11 +2,12 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { 
   Zap, BarChart2, Link2, Clock, ShieldCheck, Lock, 
-  Copy, Check, ExternalLink, ArrowRight, Sparkles 
+  Copy, Check, ExternalLink, ArrowRight, Sparkles, QrCode 
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { createShortUrl } from '../api/url';
 import { API_BASE_URL } from '../api/axiosInstance';
+import QrCodeModal from '../components/QrCodeModal';
 import './LandingPage.css';
 
 const FEATURES = [
@@ -14,6 +15,11 @@ const FEATURES = [
     Icon: Zap,
     title: 'Instant Shortening',
     desc: 'Generate clean, lightning-fast short links in milliseconds with zero friction.',
+  },
+  {
+    Icon: QrCode,
+    title: 'High-Res QR Code & Download',
+    desc: 'Generate scannable, high-resolution QR codes in one click. Download PNG for print, packaging, or digital flyers.',
   },
   {
     Icon: BarChart2,
@@ -48,6 +54,7 @@ export default function LandingPage() {
   const [result, setResult] = useState(null);
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState('');
+  const [qrModalOpen, setQrModalOpen] = useState(false);
   
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -101,7 +108,7 @@ export default function LandingPage() {
         </h1>
 
         <p className="hero-subtitle">
-          Clean URLs, instant feedback, and deep click telemetry.
+          Clean URLs, scannable QR Codes, instant feedback, and deep click telemetry.
           Paste your destination below to get started in seconds.
         </p>
 
@@ -169,6 +176,15 @@ export default function LandingPage() {
                     <ExternalLink size={16} />
                   </a>
 
+                  <button 
+                    type="button" 
+                    className="instant-icon-btn"
+                    title="View QR Code"
+                    onClick={() => setQrModalOpen(true)}
+                  >
+                    <QrCode size={16} />
+                  </button>
+
                   <Link 
                     to={`/analytics/${result.shortCode}`} 
                     className="instant-icon-btn"
@@ -178,6 +194,13 @@ export default function LandingPage() {
                   </Link>
                 </div>
               </div>
+
+              <QrCodeModal
+                isOpen={qrModalOpen}
+                onClose={() => setQrModalOpen(false)}
+                url={result.shortUrl}
+                shortCode={result.shortCode}
+              />
             </div>
           )}
 

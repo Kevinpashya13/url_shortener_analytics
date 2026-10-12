@@ -2,11 +2,12 @@ import { useState, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import {
   ArrowLeft, ExternalLink, MousePointerClick, Calendar,
-  Clock, ShieldCheck, Copy, Check, Users, Lock, Info
+  Clock, ShieldCheck, Copy, Check, Users, Lock, Info, QrCode
 } from 'lucide-react';
 import { getAnalytics } from '../api/url';
 import { API_BASE_URL } from '../api/axiosInstance';
 import { useAuth } from '../context/AuthContext';
+import QrCodeModal from '../components/QrCodeModal';
 import './AnalyticsPage.css';
 
 const regionNames = new Intl.DisplayNames(['en'], { type: 'region' });
@@ -700,6 +701,7 @@ export default function AnalyticsPage() {
   const [data, setData] = useState(null);
   const [error, setError] = useState('');
   const [copied, setCopied] = useState(false);
+  const [qrModalOpen, setQrModalOpen] = useState(false);
 
   const [selectedRange, setSelectedRange] = useState(null); // null = default 7 days
   const [customStart, setCustomStart] = useState('');
@@ -792,6 +794,10 @@ export default function AnalyticsPage() {
             {copied ? <Check size={15} color="#16a34a" /> : <Copy size={15} />}
             <span>{copied ? 'Copied Link' : 'Copy Short Link'}</span>
           </button>
+          <button className="ap-copy-btn" onClick={() => setQrModalOpen(true)} title="View QR Code">
+            <QrCode size={15} />
+            <span>QR Code</span>
+          </button>
         </div>
       </div>
 
@@ -878,6 +884,14 @@ export default function AnalyticsPage() {
         </div>
 
       </div>
+
+      {/* QR Code Modal */}
+      <QrCodeModal
+        isOpen={qrModalOpen}
+        onClose={() => setQrModalOpen(false)}
+        url={shortUrl}
+        shortCode={data.shortCode}
+      />
     </div>
   );
 }

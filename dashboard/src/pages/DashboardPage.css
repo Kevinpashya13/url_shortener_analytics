@@ -778,6 +778,24 @@
   color: #1e293b;
 }
 
+.table-qr-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 9px;
+  border-radius: 8px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  color: #475569;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.table-qr-btn:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  color: #1e293b;
+}
+
 /* ── Modal Overlay & Card ── */
 .modal-overlay {
   position: fixed;

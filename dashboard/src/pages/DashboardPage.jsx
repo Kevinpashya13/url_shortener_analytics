@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   Bell, Users, ArrowUpRight, ArrowDownRight,
-  Copy, Check, ExternalLink, Plus, Globe, Sparkles, Lock, Calendar, Info, Trash2, Pencil, X
+  Copy, Check, ExternalLink, Plus, Globe, Sparkles, Lock, Calendar, Info, Trash2, Pencil, X, QrCode
 } from 'lucide-react';
 import {
   createShortUrl, getMyUrls, getAccountMe,
@@ -10,6 +10,7 @@ import {
 } from '../api/url';
 import { API_BASE_URL } from '../api/axiosInstance';
 import { useAuth } from '../context/AuthContext';
+import QrCodeModal from '../components/QrCodeModal';
 import './DashboardPage.css';
 
 const regionNames = new Intl.DisplayNames(['en'], { type: 'region' });
@@ -671,6 +672,7 @@ export default function DashboardPage() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [copied, setCopied] = useState('');
+  const [qrSelected, setQrSelected] = useState(null);
 
   const [editingUrl, setEditingUrl] = useState(null);
   const [editAlias, setEditAlias] = useState('');
@@ -1042,6 +1044,14 @@ export default function DashboardPage() {
                               {copied === shortUrl ? <Check size={14} color="#16a34a" /> : <Copy size={14} />}
                               <span>{copied === shortUrl ? 'Copied' : 'Copy'}</span>
                             </button>
+                            <button
+                              type="button"
+                              onClick={() => setQrSelected({ url: shortUrl, shortCode: u.shortCode })}
+                              className="table-qr-btn"
+                              title="View QR Code"
+                            >
+                              <QrCode size={13} />
+                            </button>
                             <Link to={`/analytics/${u.shortCode}`} className="table-analytics-btn">
                               Analytics <ExternalLink size={12} />
                             </Link>
@@ -1149,6 +1159,14 @@ export default function DashboardPage() {
           </div>
         </div>
       )}
+
+      {/* QR Code Modal */}
+      <QrCodeModal
+        isOpen={!!qrSelected}
+        onClose={() => setQrSelected(null)}
+        url={qrSelected?.url}
+        shortCode={qrSelected?.shortCode}
+      />
     </div>
   );
 }

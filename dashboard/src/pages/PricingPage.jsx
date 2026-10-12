@@ -48,6 +48,7 @@ const FEATURES_TABLE = [
   {
     category: 'Link Customization & Control',
     items: [
+      { label: 'Instant QR Code & PNG Download', free: true, pro: true, premium: true },
       { label: 'Custom Alias', free: true, pro: true, premium: true },
       { label: 'Rename Alias (Keeps Analytics)', free: true, pro: true, premium: true },
       { label: 'Edit Destination URL', free: false, pro: true, premium: true },

@@ -50,6 +50,12 @@
 }
 .ap-dest-link:hover { color: #3b82f6; }
 
+.dash-user-area {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .ap-copy-btn {
   display: inline-flex;
   align-items: center;
