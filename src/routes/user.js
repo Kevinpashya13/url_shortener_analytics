@@ -19,10 +19,20 @@ router.get('/my-urls', authenticate, async (req, res) => {
       clickCount: true,
       createdAt: true,
       expiredAt: true,
+      passwordHash: true,
     },
   });
 
-  res.status(200).json(urls);
+  const formattedUrls = urls.map((u) => ({
+    shortCode: u.shortCode,
+    originalUrl: u.originalUrl,
+    clickCount: u.clickCount,
+    createdAt: u.createdAt,
+    expiredAt: u.expiredAt,
+    hasPassword: Boolean(u.passwordHash),
+  }));
+
+  res.status(200).json(formattedUrls);
 });
 
 router.delete('/urls/:shortCode', authenticate, async (req, res) => {

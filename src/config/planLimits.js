@@ -12,6 +12,7 @@ const PLAN_LIMITS = {
     expiry: false,
     fullAnalytics: false, // only totalClicks + clicksByDay
     fallback: false,
+    passwordProtection: false,
   },
   PRO: {
     urlsPerMonth: 150,
@@ -23,6 +24,7 @@ const PLAN_LIMITS = {
     expiry: true,
     fullAnalytics: true,
     fallback: false,
+    passwordProtection: true,
   },
   PREMIUM: {
     urlsPerMonth: 1000,
@@ -34,6 +36,7 @@ const PLAN_LIMITS = {
     expiry: true,
     fullAnalytics: true,
     fallback: true,
+    passwordProtection: true,
   },
   ADMIN: {
     urlsPerMonth: Infinity,
@@ -45,6 +48,7 @@ const PLAN_LIMITS = {
     expiry: true,
     fullAnalytics: true,
     fallback: true,
+    passwordProtection: true,
   },
 };
 

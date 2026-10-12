@@ -67,6 +67,7 @@ router.get('/account/me', authenticate, async (req, res) => {
         expiry: limits.expiry,
         fullAnalytics: limits.fullAnalytics,
         fallback: limits.fallback,
+        passwordProtection: limits.passwordProtection,
       },
     });
   } catch (err) {

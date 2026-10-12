@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { getOriginalUrl } = require('../services/urlService');
 const { logClick } = require('../services/analyticsService');
+const bcrypt = require('bcrypt');
 
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
 
@@ -120,6 +121,181 @@ function renderNotFoundHtml(code) {
 </html>`;
 }
 
+function renderPasswordProtectedHtml(code, errorMsg = '') {
+  const safeCode = escapeHtml(code);
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Protected Link | KPShortLink</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+    body {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background-color: #0b0f19;
+      color: #f3f4f6;
+      padding: 24px;
+    }
+    .card {
+      max-width: 440px;
+      width: 100%;
+      background: #111827;
+      border: 1px solid #1f2937;
+      border-radius: 16px;
+      padding: 38px 28px;
+      text-align: center;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.5);
+    }
+    .icon-badge {
+      width: 60px;
+      height: 60px;
+      border-radius: 16px;
+      background: rgba(99, 102, 241, 0.12);
+      border: 1px solid rgba(99, 102, 241, 0.25);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 26px;
+      margin-bottom: 20px;
+    }
+    h1 { font-size: 20px; font-weight: 700; color: #ffffff; margin-bottom: 8px; }
+    p { font-size: 14px; color: #9ca3af; line-height: 1.5; margin-bottom: 20px; }
+    .code-pill {
+      display: inline-block;
+      padding: 3px 10px;
+      background: #1f2937;
+      border-radius: 6px;
+      font-family: ui-monospace, monospace;
+      color: #60a5fa;
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 20px;
+    }
+    .error-alert {
+      background: rgba(239, 68, 68, 0.15);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      color: #fca5a5;
+      padding: 9px 12px;
+      border-radius: 8px;
+      font-size: 13px;
+      margin-bottom: 16px;
+      text-align: left;
+    }
+    .input-field {
+      width: 100%;
+      padding: 12px 14px;
+      background: #1f2937;
+      border: 1px solid #374151;
+      border-radius: 10px;
+      color: #ffffff;
+      font-size: 14px;
+      outline: none;
+      margin-bottom: 16px;
+      transition: border-color 0.15s;
+    }
+    .input-field:focus { border-color: #6366f1; }
+    .btn {
+      display: block;
+      width: 100%;
+      padding: 12px 20px;
+      background: #2563eb;
+      color: #ffffff;
+      font-weight: 600;
+      font-size: 14px;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: background 0.15s ease;
+    }
+    .btn:hover { background: #1d4ed8; }
+    .brand {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin-top: 24px;
+      font-size: 12px;
+      color: #6b7280;
+    }
+    .brand-logo {
+      width: 20px;
+      height: 20px;
+      border-radius: 5px;
+      background: #2563eb;
+      color: white;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      font-weight: 700;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="icon-badge">🔒</div>
+    <h1>Password Protected Link</h1>
+    <div class="code-pill">/${safeCode}</div>
+    <p>This short link is protected by its creator. Enter the access password to continue.</p>
+    
+    ${errorMsg ? `<div class="error-alert">${escapeHtml(errorMsg)}</div>` : ''}
+
+    <form method="POST" action="/${safeCode}/unlock">
+      <input type="password" name="password" placeholder="Enter link password" required autofocus class="input-field" />
+      <button type="submit" class="btn">Unlock & Continue →</button>
+    </form>
+
+    <div class="brand">
+      <span class="brand-logo">KP</span>
+      <span>KPShortLink</span>
+    </div>
+  </div>
+</body>
+</html>`;
+}
+
+// POST /:code/unlock — validates password and redirects to original destination
+router.post('/:code/unlock', async (req, res) => {
+  const { code } = req.params;
+  const password = req.body?.password;
+
+  try {
+    const url = await getOriginalUrl(code);
+
+    if (!url) {
+      if (req.accepts('html')) return res.status(404).send(renderNotFoundHtml(code));
+      return res.status(404).json({ error: 'Short URL not found or expired' });
+    }
+
+    if (!url.passwordHash) {
+      return res.redirect(302, url.originalUrl);
+    }
+
+    if (!password) {
+      return res.status(401).send(renderPasswordProtectedHtml(code, 'Password is required.'));
+    }
+
+    const isMatch = await bcrypt.compare(password, url.passwordHash);
+    if (!isMatch) {
+      if (req.accepts('html')) {
+        return res.status(401).send(renderPasswordProtectedHtml(code, 'Incorrect password. Please try again.'));
+      }
+      return res.status(401).json({ error: 'Incorrect password' });
+    }
+
+    // Success! Log click and redirect
+    res.redirect(302, url.originalUrl);
+    logClick(url.id, req);
+  } catch (err) {
+    console.error(`[${code}] Unlock failed:`, err);
+    res.status(500).send('<h3>Internal Server Error</h3>');
+  }
+});
+
 router.get('/:code', async (req, res) => {
   try {
     const { code } = req.params;
@@ -140,6 +316,24 @@ router.get('/:code', async (req, res) => {
     // Premium custom fallback: redirect to fallbackUrl instead of 404
     if (url.isFallback) {
       return res.redirect(302, url.fallbackUrl);
+    }
+
+    // Password Protected Link check
+    if (url.passwordHash) {
+      const providedPassword = req.query.pass || req.query.password;
+      if (providedPassword) {
+        const isMatch = await bcrypt.compare(providedPassword, url.passwordHash);
+        if (isMatch) {
+          res.redirect(302, url.originalUrl);
+          logClick(url.id, req);
+          return;
+        }
+      }
+
+      if (req.accepts('html')) {
+        return res.status(200).send(renderPasswordProtectedHtml(code));
+      }
+      return res.status(401).json({ error: 'Password required', passwordProtected: true });
     }
 
     res.redirect(302, url.originalUrl);

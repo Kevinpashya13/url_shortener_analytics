@@ -1,7 +1,7 @@
 import api from './axiosInstance';
 
-export const createShortUrl = (originalUrl, customAlias, expiredAt, fallbackUrl) =>
-  api.post('/shorten', { originalUrl, customAlias, expiredAt, fallbackUrl });
+export const createShortUrl = (originalUrl, customAlias, expiredAt, fallbackUrl, password) =>
+  api.post('/shorten', { originalUrl, customAlias, expiredAt, fallbackUrl, password });
 
 export const getMyUrls = () => api.get('/my-urls');
 

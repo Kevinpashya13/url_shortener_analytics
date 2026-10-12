@@ -17,6 +17,7 @@ const accountRoutes = require('./routes/account');
 const FRONTEND_ORIGIN = process.env.FRONTEND_URL || 'http://localhost:5173';
 
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 app.use(cors({ origin: FRONTEND_ORIGIN, credentials: true }));
 app.use('/', authRoutes);
 app.use('/', userRoutes);

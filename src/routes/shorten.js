@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const bcrypt = require('bcrypt');
 const { createShortUrl } = require('../services/urlService');
 const { shortenLimiter } = require('../middlewares/rateLimiter');
 const { validateShortenRequest } = require('../middlewares/validateUrl');
@@ -14,7 +15,7 @@ router.post(
   checkUrlQuota,         // monthly URL limit check
   validateShortenRequest,
   async (req, res) => {
-    const { originalUrl, customAlias, expiredAt, fallbackUrl } = req.body;
+    const { originalUrl, customAlias, expiredAt, fallbackUrl, password } = req.body;
     const userId = req.user.userId;
     const limits = req.planLimits;
 
@@ -34,13 +35,26 @@ router.post(
       });
     }
 
+    if (password && !limits.passwordProtection) {
+      return res.status(403).json({
+        error: 'Password protection is not available on your current plan',
+        requiredPlan: 'PRO',
+      });
+    }
+
     try {
+      let passwordHash = null;
+      if (password && typeof password === 'string' && password.trim()) {
+        passwordHash = await bcrypt.hash(password.trim(), 10);
+      }
+
       const result = await createShortUrl(
         originalUrl,
         customAlias || null,
         expiredAt ? new Date(expiredAt) : null,
         userId,
-        fallbackUrl || null
+        fallbackUrl || null,
+        passwordHash
       );
 
       res.status(201).json({
@@ -49,6 +63,7 @@ router.post(
         originalUrl: result.originalUrl,
         expiredAt: result.expiredAt,
         fallbackUrl: result.fallbackUrl || null,
+        hasPassword: Boolean(passwordHash),
       });
     } catch (err) {
       if (err.message === 'ALIAS_TAKEN') {

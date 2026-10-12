@@ -8,7 +8,8 @@ async function createShortUrl(
   customAlias = null,
   expiredAt = null,
   userId = null,
-  fallbackUrl = null
+  fallbackUrl = null,
+  passwordHash = null
 ) {
   if (customAlias) {
     const existing = await prisma.url.findUnique({ where: { shortCode: customAlias } });
@@ -16,13 +17,13 @@ async function createShortUrl(
       throw new Error('ALIAS_TAKEN');
     }
     return prisma.url.create({
-      data: { originalUrl, shortCode: customAlias, customAlias: true, expiredAt, userId, fallbackUrl },
+      data: { originalUrl, shortCode: customAlias, customAlias: true, expiredAt, userId, fallbackUrl, passwordHash },
     });
   }
 
   const tempShortCode = `temp_${crypto.randomUUID()}`;
   const newUrl = await prisma.url.create({
-    data: { originalUrl, shortCode: tempShortCode, expiredAt, userId, fallbackUrl },
+    data: { originalUrl, shortCode: tempShortCode, expiredAt, userId, fallbackUrl, passwordHash },
   });
 
   const shortCode = encodeBase62(newUrl.id);
@@ -60,6 +61,7 @@ async function getOriginalUrl(shortCode) {
     originalUrl: url.originalUrl,
     expiredAt: url.expiredAt,
     fallbackUrl: url.fallbackUrl || null,
+    passwordHash: url.passwordHash || null,
   });
 
   return url;

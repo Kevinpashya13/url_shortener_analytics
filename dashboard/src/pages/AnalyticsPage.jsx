@@ -9,6 +9,7 @@ import { API_BASE_URL } from '../api/axiosInstance';
 import { useAuth } from '../context/AuthContext';
 import QrCodeModal from '../components/QrCodeModal';
 import { generateAnalyticsCsv, downloadCsv } from '../utils/csvExport';
+import { useToast } from '../context/ToastContext';
 import './AnalyticsPage.css';
 
 const regionNames = new Intl.DisplayNames(['en'], { type: 'region' });
@@ -699,6 +700,7 @@ function TopReferrersCard({ referrers, isStandard }) {
 export default function AnalyticsPage() {
   const { shortCode } = useParams();
   const { user } = useAuth();
+  const toast = useToast();
   const [data, setData] = useState(null);
   const [error, setError] = useState('');
   const [copied, setCopied] = useState(false);
@@ -770,6 +772,7 @@ export default function AnalyticsPage() {
   const handleCopy = () => {
     navigator.clipboard.writeText(shortUrl);
     setCopied(true);
+    toast.success('Link copied to clipboard!');
     setTimeout(() => setCopied(false), 2000);
   };
 
@@ -788,6 +791,7 @@ export default function AnalyticsPage() {
     const csvData = generateAnalyticsCsv(data, rangeLabel);
     const filename = `analytics_${data.shortCode}_${new Date().toISOString().slice(0, 10)}.csv`;
     downloadCsv(filename, csvData);
+    toast.success('Analytics exported to CSV!');
   };
 
   return (

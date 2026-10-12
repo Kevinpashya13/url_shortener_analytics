@@ -11,6 +11,7 @@ import {
 } from '../api/url';
 import { API_BASE_URL } from '../api/axiosInstance';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 import QrCodeModal from '../components/QrCodeModal';
 import './DashboardPage.css';
 
@@ -656,6 +657,7 @@ function WorldActiveUsersCard({ breakdown, isStandard, totalClicks }) {
 // ── Main Dashboard Page ───────────────────────────────────────────────────────
 export default function DashboardPage() {
   const { user } = useAuth();
+  const toast = useToast();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -670,6 +672,7 @@ export default function DashboardPage() {
   const [customAlias, setCustomAlias] = useState('');
   const [expiredAt, setExpiredAt] = useState('');
   const [fallbackUrl, setFallbackUrl] = useState('');
+  const [linkPassword, setLinkPassword] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [copied, setCopied] = useState('');
@@ -812,13 +815,15 @@ export default function DashboardPage() {
         destinationUrl,
         customAlias || null,
         expiredAt || null,
-        fallbackUrl || null
+        fallbackUrl || null,
+        linkPassword || null
       );
-      setSuccess(`Created: ${res.data.shortUrl}`);
+      toast.success(`Short link created: ${res.data.shortUrl}`);
       setOriginalUrl('');
       setCustomAlias('');
       setExpiredAt('');
       setFallbackUrl('');
+      setLinkPassword('');
       setUtmSource('');
       setUtmMedium('');
       setUtmCampaign('');
@@ -827,7 +832,9 @@ export default function DashboardPage() {
       setShowUtm(false);
       fetchData();
     } catch (err) {
-      setError(err.response?.data?.error || 'Failed to create short URL');
+      const errMsg = err.response?.data?.error || 'Failed to create short URL';
+      setError(errMsg);
+      toast.error(errMsg);
     }
   };
 
@@ -849,11 +856,12 @@ export default function DashboardPage() {
       const [urlsRes, meRes] = await Promise.all([getMyUrls(), getAccountMe()]);
       setUrls(urlsRes.data);
       setAccount(meRes.data);
-      setSuccess('Short link updated successfully.');
+      toast.success('Short link updated successfully.');
       setEditingUrl(null);
-      setTimeout(() => setSuccess(''), 3000);
     } catch (err) {
-      setError(err.response?.data?.error || 'Failed to update short URL');
+      const errMsg = err.response?.data?.error || 'Failed to update short URL';
+      setError(errMsg);
+      toast.error(errMsg);
       setTimeout(() => setError(''), 4000);
     } finally {
       setEditLoading(false);
@@ -869,10 +877,11 @@ export default function DashboardPage() {
       const [urlsRes, meRes] = await Promise.all([getMyUrls(), getAccountMe()]);
       setUrls(urlsRes.data);
       setAccount(meRes.data);
-      setSuccess(`Link /${shortCode} deleted successfully.`);
-      setTimeout(() => setSuccess(''), 3000);
+      toast.success(`Link /${shortCode} deleted successfully.`);
     } catch (err) {
-      setError(err.response?.data?.error || 'Failed to delete URL');
+      const errMsg = err.response?.data?.error || 'Failed to delete URL';
+      setError(errMsg);
+      toast.error(errMsg);
       setTimeout(() => setError(''), 3000);
     }
   };
@@ -880,6 +889,7 @@ export default function DashboardPage() {
   const handleCopy = (text) => {
     navigator.clipboard.writeText(text);
     setCopied(text);
+    toast.success('Link copied to clipboard!');
     setTimeout(() => setCopied(''), 2000);
   };
 
@@ -1049,6 +1059,21 @@ export default function DashboardPage() {
                 <div className="locked-pill">
                   <span>Fallback URL</span>
                   <Link to="/pricing" className="pill-badge purple">Premium ↑</Link>
+                </div>
+              )}
+
+              {features.passwordProtection ? (
+                <input
+                  type="password"
+                  placeholder="Link password (optional)"
+                  value={linkPassword}
+                  onChange={(e) => setLinkPassword(e.target.value)}
+                  className="input-sub"
+                />
+              ) : (
+                <div className="locked-pill">
+                  <span>Password</span>
+                  <Link to="/pricing" className="pill-badge">Pro ↑</Link>
                 </div>
               )}
             </div>
@@ -1257,9 +1282,16 @@ export default function DashboardPage() {
                     return (
                       <tr key={u.shortCode}>
                         <td>
-                          <a href={shortUrl} target="_blank" rel="noreferrer" className="table-short-link">
-                            /{u.shortCode}
-                          </a>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <a href={shortUrl} target="_blank" rel="noreferrer" className="table-short-link">
+                              /{u.shortCode}
+                            </a>
+                            {u.hasPassword && (
+                              <span className="table-pw-badge" title="Password protected link">
+                                <Lock size={12} color="#6366f1" />
+                              </span>
+                            )}
+                          </div>
                         </td>
                         <td className="table-dest-cell" title={u.originalUrl}>
                           {u.originalUrl}
