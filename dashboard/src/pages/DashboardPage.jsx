@@ -2,7 +2,8 @@ import { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   Bell, Users, ArrowUpRight, ArrowDownRight,
-  Copy, Check, ExternalLink, Plus, Globe, Sparkles, Lock, Calendar, Info, Trash2, Pencil, X, QrCode
+  Copy, Check, ExternalLink, Plus, Globe, Sparkles, Lock, Calendar, Info, Trash2, Pencil, X, QrCode,
+  Sliders, ChevronDown, ChevronUp, RotateCcw, AlertCircle
 } from 'lucide-react';
 import {
   createShortUrl, getMyUrls, getAccountMe,
@@ -674,6 +675,59 @@ export default function DashboardPage() {
   const [copied, setCopied] = useState('');
   const [qrSelected, setQrSelected] = useState(null);
 
+  // UTM Campaign Builder state
+  const [showUtm, setShowUtm] = useState(false);
+  const [utmSource, setUtmSource] = useState('');
+  const [utmMedium, setUtmMedium] = useState('');
+  const [utmCampaign, setUtmCampaign] = useState('');
+  const [utmTerm, setUtmTerm] = useState('');
+  const [utmContent, setUtmContent] = useState('');
+  const FIELD_HELP = {
+    source: {
+      title: 'Campaign Source (utm_source)',
+      desc: 'The platform, search engine, or referrer where traffic originates.',
+      example: 'e.g. google, instagram, facebook, newsletter, tiktok',
+    },
+    medium: {
+      title: 'Campaign Medium (utm_medium)',
+      desc: 'Marketing medium or delivery channel format.',
+      example: 'e.g. cpc, bio, email, social, banner, story',
+    },
+    campaign: {
+      title: 'Campaign Name (utm_campaign)',
+      desc: 'Specific marketing campaign, promo tag, or product slogan.',
+      example: 'e.g. summer_sale, holiday_promo, launch_2026',
+    },
+    term: {
+      title: 'Campaign Term (utm_term)',
+      desc: 'Search keywords tracked for paid search advertising.',
+      example: 'e.g. running_shoes, web_agency, design_tips',
+    },
+    content: {
+      title: 'Campaign Content (utm_content)',
+      desc: 'Differentiates multiple links or creative variants for A/B testing.',
+      example: 'e.g. top_banner, cta_blue_btn, footer_link',
+    },
+  };
+
+  const buildFinalUrl = (baseUrl) => {
+    if (!baseUrl) return '';
+    try {
+      const formatted = baseUrl.startsWith('http://') || baseUrl.startsWith('https://') ? baseUrl : `https://${baseUrl}`;
+      const urlObj = new URL(formatted);
+      if (utmSource.trim()) urlObj.searchParams.set('utm_source', utmSource.trim());
+      if (utmMedium.trim()) urlObj.searchParams.set('utm_medium', utmMedium.trim());
+      if (utmCampaign.trim()) urlObj.searchParams.set('utm_campaign', utmCampaign.trim());
+      if (utmTerm.trim()) urlObj.searchParams.set('utm_term', utmTerm.trim());
+      if (utmContent.trim()) urlObj.searchParams.set('utm_content', utmContent.trim());
+      return urlObj.toString();
+    } catch {
+      return baseUrl;
+    }
+  };
+
+  const hasUtm = Boolean(utmSource.trim() || utmMedium.trim() || utmCampaign.trim() || utmTerm.trim() || utmContent.trim());
+
   const [editingUrl, setEditingUrl] = useState(null);
   const [editAlias, setEditAlias] = useState('');
   const [editDestination, setEditDestination] = useState('');
@@ -750,9 +804,12 @@ export default function DashboardPage() {
     e.preventDefault();
     setError('');
     setSuccess('');
+
+    const destinationUrl = hasUtm ? buildFinalUrl(originalUrl) : originalUrl;
+
     try {
       const res = await createShortUrl(
-        originalUrl,
+        destinationUrl,
         customAlias || null,
         expiredAt || null,
         fallbackUrl || null
@@ -762,6 +819,12 @@ export default function DashboardPage() {
       setCustomAlias('');
       setExpiredAt('');
       setFallbackUrl('');
+      setUtmSource('');
+      setUtmMedium('');
+      setUtmCampaign('');
+      setUtmTerm('');
+      setUtmContent('');
+      setShowUtm(false);
       fetchData();
     } catch (err) {
       setError(err.response?.data?.error || 'Failed to create short URL');
@@ -989,6 +1052,175 @@ export default function DashboardPage() {
                 </div>
               )}
             </div>
+
+            {/* UTM Tracking Collapsible Button */}
+            <div className="utm-toggle-row">
+              <button
+                type="button"
+                className={`btn-toggle-utm ${showUtm ? 'active' : ''}`}
+                onClick={() => setShowUtm(!showUtm)}
+              >
+                <Sliders size={13} />
+                <span>{showUtm ? 'Hide Campaign Tracking (UTM)' : 'Add Campaign Tracking (UTM)'}</span>
+                {hasUtm && <span className="utm-badge-dot">Active</span>}
+                {showUtm ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+              </button>
+              {hasUtm && (
+                <button
+                  type="button"
+                  className="btn-clear-utm"
+                  onClick={() => {
+                    setUtmSource('');
+                    setUtmMedium('');
+                    setUtmCampaign('');
+                    setUtmTerm('');
+                    setUtmContent('');
+                  }}
+                  title="Clear all UTM parameters"
+                >
+                  <RotateCcw size={12} /> Clear UTM
+                </button>
+              )}
+            </div>
+
+            {/* UTM Builder Panel */}
+            {showUtm && (
+              <div className="utm-builder-panel">
+                <div className="utm-fields-grid">
+                  {/* Field 1: Source */}
+                  <div className="utm-field">
+                    <div className="utm-label-row">
+                      <label className="utm-label">
+                        Campaign Source <span className="req-dot">*</span>
+                      </label>
+                      <div className="utm-help-wrap">
+                        <span className="btn-help-icon" title="Campaign Source information" tabIndex={0}>
+                          <AlertCircle size={13} />
+                        </span>
+                        <div className="help-hover-card">
+                          <span className="help-title">{FIELD_HELP.source.title}</span>
+                          <p className="help-desc">{FIELD_HELP.source.desc}</p>
+                          <div className="help-example">{FIELD_HELP.source.example}</div>
+                        </div>
+                      </div>
+                    </div>
+                    <input
+                      type="text"
+                      placeholder="e.g. google, instagram, newsletter"
+                      value={utmSource}
+                      onChange={(e) => setUtmSource(e.target.value)}
+                      className="utm-input"
+                    />
+                  </div>
+
+                  {/* Field 2: Medium */}
+                  <div className="utm-field">
+                    <div className="utm-label-row">
+                      <label className="utm-label">Campaign Medium</label>
+                      <div className="utm-help-wrap">
+                        <span className="btn-help-icon" title="Campaign Medium information" tabIndex={0}>
+                          <AlertCircle size={13} />
+                        </span>
+                        <div className="help-hover-card">
+                          <span className="help-title">{FIELD_HELP.medium.title}</span>
+                          <p className="help-desc">{FIELD_HELP.medium.desc}</p>
+                          <div className="help-example">{FIELD_HELP.medium.example}</div>
+                        </div>
+                      </div>
+                    </div>
+                    <input
+                      type="text"
+                      placeholder="e.g. cpc, bio, email, social"
+                      value={utmMedium}
+                      onChange={(e) => setUtmMedium(e.target.value)}
+                      className="utm-input"
+                    />
+                  </div>
+
+                  {/* Field 3: Campaign */}
+                  <div className="utm-field">
+                    <div className="utm-label-row">
+                      <label className="utm-label">Campaign Name</label>
+                      <div className="utm-help-wrap">
+                        <span className="btn-help-icon" title="Campaign Name information" tabIndex={0}>
+                          <AlertCircle size={13} />
+                        </span>
+                        <div className="help-hover-card">
+                          <span className="help-title">{FIELD_HELP.campaign.title}</span>
+                          <p className="help-desc">{FIELD_HELP.campaign.desc}</p>
+                          <div className="help-example">{FIELD_HELP.campaign.example}</div>
+                        </div>
+                      </div>
+                    </div>
+                    <input
+                      type="text"
+                      placeholder="e.g. summer_sale, promo_launch"
+                      value={utmCampaign}
+                      onChange={(e) => setUtmCampaign(e.target.value)}
+                      className="utm-input"
+                    />
+                  </div>
+
+                  {/* Field 4: Term */}
+                  <div className="utm-field">
+                    <div className="utm-label-row">
+                      <label className="utm-label">Campaign Term (Optional)</label>
+                      <div className="utm-help-wrap">
+                        <span className="btn-help-icon" title="Campaign Term information" tabIndex={0}>
+                          <AlertCircle size={13} />
+                        </span>
+                        <div className="help-hover-card">
+                          <span className="help-title">{FIELD_HELP.term.title}</span>
+                          <p className="help-desc">{FIELD_HELP.term.desc}</p>
+                          <div className="help-example">{FIELD_HELP.term.example}</div>
+                        </div>
+                      </div>
+                    </div>
+                    <input
+                      type="text"
+                      placeholder="e.g. running+shoes"
+                      value={utmTerm}
+                      onChange={(e) => setUtmTerm(e.target.value)}
+                      className="utm-input"
+                    />
+                  </div>
+
+                  {/* Field 5: Content */}
+                  <div className="utm-field">
+                    <div className="utm-label-row">
+                      <label className="utm-label">Campaign Content (Optional)</label>
+                      <div className="utm-help-wrap">
+                        <span className="btn-help-icon" title="Campaign Content information" tabIndex={0}>
+                          <AlertCircle size={13} />
+                        </span>
+                        <div className="help-hover-card">
+                          <span className="help-title">{FIELD_HELP.content.title}</span>
+                          <p className="help-desc">{FIELD_HELP.content.desc}</p>
+                          <div className="help-example">{FIELD_HELP.content.example}</div>
+                        </div>
+                      </div>
+                    </div>
+                    <input
+                      type="text"
+                      placeholder="e.g. banner_top, cta_blue"
+                      value={utmContent}
+                      onChange={(e) => setUtmContent(e.target.value)}
+                      className="utm-input"
+                    />
+                  </div>
+                </div>
+
+                {/* Realtime Live Preview */}
+                {originalUrl && hasUtm && (
+                  <div className="utm-preview-box">
+                    <span className="utm-preview-tag">Assembled URL:</span>
+                    <span className="utm-preview-url" title={buildFinalUrl(originalUrl)}>
+                      {buildFinalUrl(originalUrl)}
+                    </span>
+                  </div>
+                )}
+              </div>
+            )}
 
             {error && <p className="form-alert error">{error}</p>}
             {success && <p className="form-alert success">{success}</p>}
