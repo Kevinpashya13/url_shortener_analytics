@@ -1,144 +1,240 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Zap, BarChart2, Link2, Clock, ShieldCheck, Lock } from 'lucide-react';
+import { 
+  Zap, BarChart2, Link2, Clock, ShieldCheck, Lock, 
+  Copy, Check, ExternalLink, ArrowRight, Sparkles 
+} from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { createShortUrl } from '../api/url';
+import { API_BASE_URL } from '../api/axiosInstance';
 import './LandingPage.css';
 
 const FEATURES = [
   {
     Icon: Zap,
     title: 'Instant Shortening',
-    desc: 'Generate a short link in milliseconds. No signup required to try.',
+    desc: 'Generate clean, lightning-fast short links in milliseconds with zero friction.',
   },
   {
     Icon: BarChart2,
-    title: 'Click Analytics',
-    desc: 'Track every click — see daily trends, devices, locations, and referrers.',
+    title: 'Real-time Analytics',
+    desc: 'Monitor clicks, geolocations, devices, and referral sources in real-time.',
   },
   {
     Icon: Link2,
-    title: 'Custom Aliases',
-    desc: 'Create branded links with your own keywords. Available on Pro and above.',
+    title: 'Custom Brand Aliases',
+    desc: 'Create memorable branded links that build trust and boost click-through rates.',
   },
   {
     Icon: Clock,
-    title: 'Link Expiry',
-    desc: 'Set an exact date and time for your link to stop working.',
+    title: 'Link Expiry Controls',
+    desc: 'Set automatic expiration timers for time-sensitive marketing campaigns.',
   },
   {
     Icon: ShieldCheck,
-    title: 'Custom Fallback',
-    desc: 'When a link expires, redirect visitors to your own page instead of a 404.',
+    title: 'Smart Fallback URLs',
+    desc: 'Redirect visitors to custom destinations when a campaign link reaches expiration.',
   },
   {
     Icon: Lock,
-    title: 'Secure by Default',
-    desc: 'Every link is served over HTTPS. Your data stays private.',
+    title: 'Enterprise-grade Security',
+    desc: 'Protected with rate limiting, HTTPS encryption, and spam blacklist verification.',
   },
 ];
 
 export default function LandingPage() {
   const [inputUrl, setInputUrl] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState(null);
+  const [copied, setCopied] = useState(false);
+  const [error, setError] = useState('');
+  
   const { user } = useAuth();
   const navigate = useNavigate();
 
-  const handleShorten = (e) => {
+  const handleShorten = async (e) => {
     e.preventDefault();
+    setError('');
+
     if (!user) {
+      // If guest, preserve input and redirect to quick onboarding
       navigate('/get-started', { state: { pendingUrl: inputUrl } });
       return;
     }
-    navigate('/dashboard', { state: { pendingUrl: inputUrl } });
+
+    setLoading(true);
+    try {
+      const res = await createShortUrl(inputUrl);
+      const generatedCode = res.data.shortCode;
+      setResult({
+        shortCode: generatedCode,
+        shortUrl: `${API_BASE_URL}/${generatedCode}`,
+        originalUrl: res.data.originalUrl,
+      });
+      setInputUrl('');
+    } catch (err) {
+      setError(err.response?.data?.error || 'Failed to shorten URL. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCopy = () => {
+    if (!result?.shortUrl) return;
+    navigator.clipboard.writeText(result.shortUrl);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   };
 
   return (
     <div className="landing">
-
-      {/* Hero */}
+      {/* ── Hero Section ── */}
       <section className="hero">
+        <div className="hero-eyebrow">
+          <Sparkles size={14} className="hero-eyebrow-icon" />
+          <span>Next-Gen Link Management</span>
+        </div>
+
         <h1 className="hero-title">
-          Shorten, share, and<br />
-          <span className="hero-accent">understand your links</span>
+          Shorten links with <br />
+          <span className="hero-accent">precision & speed</span>
         </h1>
+
         <p className="hero-subtitle">
-          Create clean short links in seconds. Track who clicks, where they are,
-          and what device they use — all from one dashboard.
+          Clean URLs, instant feedback, and deep click telemetry.
+          Paste your destination below to get started in seconds.
         </p>
 
-        <form className="hero-form" onSubmit={handleShorten}>
-          <div className="hero-input-wrap">
-            <input
-              type="url"
-              placeholder="Paste your long URL here..."
-              value={inputUrl}
-              onChange={(e) => setInputUrl(e.target.value)}
-              required
-              className="hero-input"
-            />
-            <button type="submit" className="hero-btn">
-              Shorten for free
-            </button>
-          </div>
+        {/* Hero Form Box */}
+        <div className="hero-box-container">
+          <form className="hero-form" onSubmit={handleShorten}>
+            <div className="hero-input-wrap">
+              <input
+                type="url"
+                placeholder="Paste your long link here (e.g., https://example.com/very-long-url)..."
+                value={inputUrl}
+                onChange={(e) => setInputUrl(e.target.value)}
+                required
+                className="hero-input"
+              />
+              <button type="submit" className="hero-btn" disabled={loading}>
+                {loading ? 'Shortening...' : 'Shorten Link'}
+                <ArrowRight size={16} />
+              </button>
+            </div>
+          </form>
+
+          {error && <div className="hero-error-msg">{error}</div>}
+
+          {/* ── Instant Result & Feedback Card ── */}
+          {result && (
+            <div className="instant-result-card">
+              <div className="instant-result-header">
+                <span className="result-label">Your shortened link is ready:</span>
+                <span className="result-badge">Instant</span>
+              </div>
+
+              <div className="instant-result-body">
+                <div className="instant-link-display">
+                  <a 
+                    href={result.shortUrl} 
+                    target="_blank" 
+                    rel="noreferrer" 
+                    className="instant-link-text"
+                  >
+                    {result.shortUrl}
+                  </a>
+                  <span className="instant-dest-text" title={result.originalUrl}>
+                    Target: {result.originalUrl}
+                  </span>
+                </div>
+
+                <div className="instant-actions">
+                  <button 
+                    type="button" 
+                    className={`instant-copy-btn ${copied ? 'copied' : ''}`}
+                    onClick={handleCopy}
+                  >
+                    {copied ? <Check size={16} /> : <Copy size={16} />}
+                    <span>{copied ? 'Copied!' : 'Copy Link'}</span>
+                  </button>
+
+                  <a 
+                    href={result.shortUrl} 
+                    target="_blank" 
+                    rel="noreferrer" 
+                    className="instant-icon-btn"
+                    title="Open Short Link"
+                  >
+                    <ExternalLink size={16} />
+                  </a>
+
+                  <Link 
+                    to={`/analytics/${result.shortCode}`} 
+                    className="instant-icon-btn"
+                    title="View Analytics"
+                  >
+                    <BarChart2 size={16} />
+                  </Link>
+                </div>
+              </div>
+            </div>
+          )}
+
           {!user && (
             <p className="hero-note">
-              Free forever &middot; No credit card required &middot;{' '}
-              <Link to="/register">Create account</Link>
+              Free 25 links/month &middot; No credit card required &middot;{' '}
+              <Link to="/register">Create free account</Link>
             </p>
           )}
-        </form>
+        </div>
       </section>
 
-      <div className="section-divider" />
-
-      {/* Features */}
+      {/* ── Features Section ── */}
       <section className="features-section">
         <div className="section-header">
-          <h2 className="section-title">Everything you need to grow</h2>
-          <p className="section-sub">From basic shortening to deep analytics — we have you covered.</p>
+          <h2 className="section-title">Engineered for clarity and control</h2>
+          <p className="section-sub">
+            Everything you need to deliver high-converting links and monitor audience interaction.
+          </p>
         </div>
+
         <div className="features-grid">
           {FEATURES.map(({ Icon, title, desc }) => (
-            <div className="feature-card" key={title}>
+            <div key={title} className="feature-card">
               <div className="feature-icon-wrap">
-                <Icon size={20} strokeWidth={1.75} />
+                <Icon size={20} />
               </div>
-              <h3 className="feature-name">{title}</h3>
+              <h3 className="feature-title">{title}</h3>
               <p className="feature-desc">{desc}</p>
             </div>
           ))}
         </div>
+
+        <div className="features-cta-wrap">
+          <Link to="/pricing" className="see-plans-btn">
+            Explore All Features & Pricing <ArrowRight size={15} />
+          </Link>
+        </div>
       </section>
 
-      <div className="section-divider" />
-
-      {/* Pricing teaser */}
-      <section className="pricing-teaser">
-        <div className="section-header">
-          <h2 className="section-title">Pick the plan that fits you</h2>
-          <p className="section-sub">Start free. Upgrade when you need more power.</p>
+      {/* ── Bottom Call to Action ── */}
+      <section className="bottom-cta-section">
+        <div className="bottom-cta-card">
+          <h2 className="bottom-cta-title">Ready to take control of your links?</h2>
+          <p className="bottom-cta-sub">
+            Join thousands of creators, founders, and developers optimizing their link performance today.
+          </p>
+          <div className="bottom-cta-buttons">
+            <Link to={user ? "/dashboard" : "/register"} className="cta-btn primary">
+              {user ? "Go to Dashboard" : "Get Started for Free"}
+            </Link>
+            <Link to="/features" className="cta-btn secondary">
+              View Feature Specs
+            </Link>
+          </div>
         </div>
-        <div className="plan-row">
-          <div className="plan-tag standard">Standard &mdash; Free</div>
-          <div className="plan-tag pro">Pro &mdash; Paid</div>
-          <div className="plan-tag premium">Premium &mdash; Paid</div>
-        </div>
-        <Link to="/pricing" className="see-plans-btn">See all plans</Link>
       </section>
-
-      {/* CTA — only for guests */}
-      {!user && (
-        <>
-          <div className="section-divider" />
-          <section className="cta-section">
-            <h2 className="cta-title">Ready to shorten your first link?</h2>
-            <p className="cta-sub">Join users who already use this service to track their links.</p>
-            <div className="cta-buttons">
-              <Link to="/register" className="cta-btn primary">Get started free</Link>
-              <Link to="/login" className="cta-btn secondary">Sign in</Link>
-            </div>
-          </section>
-        </>
-      )}
     </div>
   );
 }

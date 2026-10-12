@@ -8,6 +8,7 @@ import {
   createShortUrl, getMyUrls, getAccountMe,
   getAccountAnalyticsOverview, upgradeAccount, deleteShortUrl, updateShortUrl
 } from '../api/url';
+import { API_BASE_URL } from '../api/axiosInstance';
 import { useAuth } from '../context/AuthContext';
 import './DashboardPage.css';
 
@@ -1018,7 +1019,7 @@ export default function DashboardPage() {
                 </thead>
                 <tbody>
                   {urls.map((u) => {
-                    const shortUrl = `http://localhost:3000/${u.shortCode}`;
+                    const shortUrl = `${API_BASE_URL}/${u.shortCode}`;
                     return (
                       <tr key={u.shortCode}>
                         <td>

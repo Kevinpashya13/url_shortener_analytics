@@ -1,8 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const { registerUser, loginUser } = require('../services/authService');
+const { authLimiter } = require('../middlewares/rateLimiter');
 
-router.post('/auth/register', async (req, res) => {
+router.post('/auth/register', authLimiter, async (req, res) => {
   const { email, password } = req.body;
 
   if (!email || !password || password.length < 8) {
@@ -21,7 +22,7 @@ router.post('/auth/register', async (req, res) => {
   }
 });
 
-router.post('/auth/login', async (req, res) => {
+router.post('/auth/login', authLimiter, async (req, res) => {
   const { email, password } = req.body;
 
   if (!email || !password) {

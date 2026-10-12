@@ -5,6 +5,7 @@ import {
   Clock, ShieldCheck, Copy, Check, Users, Lock, Info
 } from 'lucide-react';
 import { getAnalytics } from '../api/url';
+import { API_BASE_URL } from '../api/axiosInstance';
 import { useAuth } from '../context/AuthContext';
 import './AnalyticsPage.css';
 
@@ -697,6 +698,7 @@ export default function AnalyticsPage() {
   const { shortCode } = useParams();
   const { user } = useAuth();
   const [data, setData] = useState(null);
+  const [error, setError] = useState('');
   const [copied, setCopied] = useState(false);
 
   const [selectedRange, setSelectedRange] = useState(null); // null = default 7 days
@@ -710,8 +712,10 @@ export default function AnalyticsPage() {
     try {
       const res = await getAnalytics(shortCode, params);
       setData(res.data);
+      setError('');
     } catch (err) {
       console.error('Failed to load url analytics:', err);
+      setError(err.response?.data?.error || 'Failed to load analytics');
     }
   };
 
@@ -741,9 +745,24 @@ export default function AnalyticsPage() {
     fetchDetailAnalytics({ startDate: start, endDate: end });
   };
 
+  if (error) {
+    return (
+      <div className="analytics-screen">
+        <div className="dash-top-bar" style={{ marginBottom: '24px' }}>
+          <Link to="/dashboard" className="ap-back-btn">
+            <ArrowLeft size={15} /> Back to Dashboard
+          </Link>
+        </div>
+        <div className="empty-state-box" style={{ padding: '80px 20px', textAlign: 'center' }}>
+          <p style={{ color: '#ef4444', fontWeight: 600, fontSize: '1.1rem' }}>{error}</p>
+        </div>
+      </div>
+    );
+  }
+
   if (!data) return <div className="ap-loading-wrap">Loading analytics...</div>;
 
-  const shortUrl = `http://localhost:3000/${data.shortCode}`;
+  const shortUrl = `${API_BASE_URL}/${data.shortCode}`;
 
   const handleCopy = () => {
     navigator.clipboard.writeText(shortUrl);

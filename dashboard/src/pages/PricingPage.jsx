@@ -1,4 +1,4 @@
-import { Fragment } from 'react';
+import { useState, Fragment } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Check, X, Sparkles } from 'lucide-react';
@@ -46,7 +46,7 @@ const FEATURES_TABLE = [
     ],
   },
   {
-    category: 'Link Customization & Management',
+    category: 'Link Customization & Control',
     items: [
       { label: 'Custom Alias', free: true, pro: true, premium: true },
       { label: 'Rename Alias (Keeps Analytics)', free: true, pro: true, premium: true },
@@ -67,6 +67,9 @@ const FEATURES_TABLE = [
 export default function PricingPage() {
   const { user } = useAuth();
   const currentRole = user?.role || 'STANDARD';
+  const [activeTab, setActiveTab] = useState('PRO');
+
+  const selectedPlan = PLANS.find((p) => p.key === activeTab) || PLANS[1];
 
   const renderValue = (val) => {
     if (typeof val === 'boolean') {
@@ -79,6 +82,12 @@ export default function PricingPage() {
     return <span className="table-text-val">{val}</span>;
   };
 
+  const getPlanVal = (item, planKey) => {
+    if (planKey === 'STANDARD') return item.free;
+    if (planKey === 'PRO') return item.pro;
+    return item.premium;
+  };
+
   return (
     <div className="pricing">
       <div className="pricing-hero">
@@ -88,7 +97,8 @@ export default function PricingPage() {
         </p>
       </div>
 
-      <div className="pricing-table-wrapper">
+      {/* ── DESKTOP VIEW: Full 4-Column Table (>= 768px) ── */}
+      <div className="pricing-table-wrapper desktop-only">
         <table className="pricing-table">
           <thead>
             <tr>
@@ -147,6 +157,70 @@ export default function PricingPage() {
             ))}
           </tbody>
         </table>
+      </div>
+
+      {/* ── MOBILE VIEW: Interactive Tab Switcher (< 768px) ── */}
+      <div className="pricing-mobile-view mobile-only">
+        <div className="mobile-plan-tabs">
+          {PLANS.map((p) => (
+            <button
+              key={p.key}
+              type="button"
+              className={`mobile-tab-btn ${activeTab === p.key ? 'active' : ''} ${p.highlight ? 'is-highlight' : ''}`}
+              onClick={() => setActiveTab(p.key)}
+            >
+              {p.name}
+              {p.highlight && <span className="tab-dot">★</span>}
+            </button>
+          ))}
+        </div>
+
+        <div className="mobile-plan-card">
+          <div className="mobile-card-top">
+            <div>
+              <h2 className="mobile-plan-title" style={{ color: selectedPlan.color }}>{selectedPlan.name} Plan</h2>
+              <p className="mobile-plan-sub">{selectedPlan.tagline}</p>
+            </div>
+            <div className="mobile-plan-price">{selectedPlan.price}</div>
+          </div>
+
+          <div className="mobile-card-cta">
+            {currentRole === selectedPlan.key ? (
+              <span className="cta-current-badge">✓ Current plan</span>
+            ) : !user ? (
+              <Link to="/register" className={`table-cta-btn cta-${selectedPlan.ctaStyle}`}>
+                Get Started
+              </Link>
+            ) : selectedPlan.targetRole ? (
+              <Link
+                to="/dashboard"
+                state={{ upgradeRole: selectedPlan.targetRole }}
+                className={`table-cta-btn cta-${selectedPlan.ctaStyle}`}
+              >
+                {selectedPlan.cta}
+              </Link>
+            ) : (
+              <span className="cta-current-badge">✓ Current plan</span>
+            )}
+          </div>
+
+          <div className="mobile-features-list">
+            {FEATURES_TABLE.map((section, sIdx) => (
+              <div key={sIdx} className="mobile-feature-group">
+                <div className="mobile-group-title">{section.category}</div>
+                {section.items.map((item, iIdx) => {
+                  const val = getPlanVal(item, activeTab);
+                  return (
+                    <div key={iIdx} className="mobile-feature-item">
+                      <span className="mobile-feat-label">{item.label}</span>
+                      <span className="mobile-feat-val">{renderValue(val)}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
 
       {!user && (

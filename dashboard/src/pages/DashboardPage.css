@@ -4,7 +4,7 @@
   min-height: 100vh;
   background: #f8fafc;
   color: #0f172a;
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif;
   padding: 32px 40px 80px;
 }
 
@@ -676,9 +676,14 @@
 }
 
 .table-short-link {
-  font-weight: 700;
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 600;
   color: #3b82f6;
   text-decoration: none;
+  font-size: 0.95rem;
+}
+.table-short-link:hover {
+  text-decoration: underline;
 }
 
 .table-dest-cell {

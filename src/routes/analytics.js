@@ -8,12 +8,17 @@ router.get('/analytics/:code', authenticate, async (req, res) => {
   const { code } = req.params;
   const { days, startDate, endDate } = req.query;
   const role = req.user.role || 'STANDARD';
+  const userId = req.user.userId;
 
   try {
-    const summary = await getAnalyticsSummary(code, { days, startDate, endDate }, role);
+    const summary = await getAnalyticsSummary(code, { days, startDate, endDate }, role, userId);
 
     if (!summary) {
       return res.status(404).json({ error: 'Short URL not found' });
+    }
+
+    if (summary.forbidden) {
+      return res.status(403).json({ error: 'You are not authorized to view analytics for this URL' });
     }
 
     res.status(200).json(summary);

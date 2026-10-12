@@ -5,6 +5,7 @@ const { authenticate } = require('../middlewares/auth');
 
 const { getLimits } = require('../config/planLimits');
 const { deleteCachedUrl } = require('../services/cacheService');
+const { isReservedAlias, isValidHttpUrl } = require('../middlewares/validateUrl');
 
 router.get('/my-urls', authenticate, async (req, res) => {
   const userId = req.user.userId;
@@ -100,6 +101,12 @@ router.patch('/urls/:shortCode', authenticate, async (req, res) => {
         });
       }
 
+      if (isReservedAlias(aliasClean)) {
+        return res.status(400).json({
+          error: `Alias "${aliasClean}" is reserved by the system. Please choose another alias.`,
+        });
+      }
+
       const existing = await prisma.url.findUnique({ where: { shortCode: aliasClean } });
       if (existing && existing.id !== url.id) {
         return res.status(409).json({ error: 'Alias already in use. Please choose another.' });
@@ -118,10 +125,8 @@ router.patch('/urls/:shortCode', authenticate, async (req, res) => {
         });
       }
 
-      try {
-        new URL(originalUrl);
-      } catch {
-        return res.status(400).json({ error: 'Invalid destination URL format' });
+      if (!isValidHttpUrl(originalUrl)) {
+        return res.status(400).json({ error: 'Invalid destination URL format. Only http:// and https:// URLs are allowed.' });
       }
 
       updateData.originalUrl = originalUrl;

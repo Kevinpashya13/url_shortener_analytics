@@ -1,3 +1,4 @@
+const crypto = require('crypto');
 const prisma = require('../config/prisma');
 const { encodeBase62 } = require('../utility/base62');
 const { getCachedUrl, setCachedUrl, deleteCachedUrl } = require('./cacheService');
@@ -19,8 +20,9 @@ async function createShortUrl(
     });
   }
 
+  const tempShortCode = `temp_${crypto.randomUUID()}`;
   const newUrl = await prisma.url.create({
-    data: { originalUrl, shortCode: '', expiredAt, userId, fallbackUrl },
+    data: { originalUrl, shortCode: tempShortCode, expiredAt, userId, fallbackUrl },
   });
 
   const shortCode = encodeBase62(newUrl.id);

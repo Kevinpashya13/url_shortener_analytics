@@ -24,12 +24,15 @@
 .pricing-subtitle {
   font-size: 1.05rem;
   color: #94a3b8;
-  margin: 0;
-  max-width: 600px;
   margin: 0 auto;
+  max-width: 600px;
 }
 
-/* Comparison Table Wrapper */
+/* Visibility toggles */
+.desktop-only { display: block; }
+.mobile-only { display: none; }
+
+/* ── DESKTOP COMPARISON TABLE ── */
 .pricing-table-wrapper {
   max-width: 1040px;
   margin: 0 auto;
@@ -176,7 +179,6 @@
   box-sizing: border-box;
 }
 
-/* Category header row */
 .table-section-row td {
   background: rgba(255, 255, 255, 0.04);
   font-weight: 700;
@@ -222,7 +224,6 @@
   color: #f1f5f9;
 }
 
-/* Note below table */
 .pricing-note {
   text-align: center;
   margin-top: 36px;
@@ -238,4 +239,137 @@
 
 .pricing-note a:hover {
   text-decoration: underline;
+}
+
+/* ── MOBILE RESPONSIVE STYLES (< 768px) ── */
+@media (max-width: 768px) {
+  .pricing {
+    padding: 0 16px 80px;
+  }
+
+  .desktop-only { display: none !important; }
+  .mobile-only { display: block !important; }
+
+  .pricing-hero {
+    padding: 40px 8px 24px;
+  }
+  .pricing-title {
+    font-size: 1.75rem;
+    margin-bottom: 10px;
+  }
+  .pricing-subtitle {
+    font-size: 0.9rem;
+  }
+
+  /* Segmented Mobile Tab Switcher */
+  .mobile-plan-tabs {
+    display: flex;
+    gap: 6px;
+    background: rgba(255, 255, 255, 0.04);
+    padding: 5px;
+    border-radius: 14px;
+    margin: 0 auto 20px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    max-width: 440px;
+  }
+
+  .mobile-tab-btn {
+    flex: 1;
+    padding: 10px 6px;
+    border-radius: 10px;
+    background: transparent;
+    border: none;
+    color: #94a3b8;
+    font-size: 0.88rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+  }
+
+  .mobile-tab-btn.active {
+    background: #6366f1;
+    color: #ffffff;
+    box-shadow: 0 4px 14px rgba(99, 102, 241, 0.4);
+  }
+
+  .tab-dot {
+    font-size: 0.72rem;
+    color: #fde047;
+  }
+
+  /* Mobile Plan Card Container */
+  .mobile-plan-card {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 20px;
+    padding: 24px 18px;
+    max-width: 440px;
+    margin: 0 auto;
+    box-shadow: 0 16px 32px rgba(0, 0, 0, 0.3);
+  }
+
+  .mobile-card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 18px;
+  }
+
+  .mobile-plan-title {
+    font-size: 1.35rem;
+    font-weight: 800;
+    margin: 0 0 4px;
+  }
+
+  .mobile-plan-sub {
+    font-size: 0.78rem;
+    color: #94a3b8;
+    margin: 0;
+  }
+
+  .mobile-plan-price {
+    font-size: 1.65rem;
+    font-weight: 800;
+    color: #f8fafc;
+  }
+
+  .mobile-card-cta {
+    margin-bottom: 22px;
+  }
+
+  /* Feature Groups on Mobile */
+  .mobile-group-title {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #818cf8;
+    padding: 14px 0 8px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    margin-bottom: 4px;
+  }
+
+  .mobile-feature-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 11px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+  }
+
+  .mobile-feat-label {
+    font-size: 0.86rem;
+    color: #e2e8f0;
+    flex: 1;
+    padding-right: 12px;
+  }
+
+  .mobile-feat-val {
+    font-size: 0.84rem;
+    text-align: right;
+  }
 }

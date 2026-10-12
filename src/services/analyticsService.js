@@ -77,7 +77,7 @@ function toDateKey(date) {
   return `${year}-${month}-${day}`;
 }
 
-async function getAnalyticsSummary(shortCode, options = {}, role = 'STANDARD') {
+async function getAnalyticsSummary(shortCode, options = {}, role = 'STANDARD', userId = null) {
   const days = typeof options === 'number' ? options : options?.days;
   const startDate = typeof options === 'object' ? options?.startDate : null;
   const endDate = typeof options === 'object' ? options?.endDate : null;
@@ -87,7 +87,12 @@ async function getAnalyticsSummary(shortCode, options = {}, role = 'STANDARD') {
     include: { clickLogs: true },
   });
 
-  if (!url) return null;
+  if (!url || url.isDeleted) return null;
+
+  // Authorization check: User can only view their own link analytics (unless ADMIN)
+  if (role !== 'ADMIN' && url.userId !== userId) {
+    return { forbidden: true };
+  }
 
   let filteredLogs = url.clickLogs;
 
