@@ -73,6 +73,17 @@
 }
 .ap-copy-btn:hover { background: #f8fafc; border-color: #cbd5e1; }
 
+.ap-export-btn {
+  background: #0f172a;
+  color: #ffffff;
+  border: 1px solid #0f172a;
+}
+.ap-export-btn:hover {
+  background: #1e293b;
+  border-color: #1e293b;
+  color: #ffffff;
+}
+
 /* ── Card Base ── */
 .dash-box {
   background: #ffffff;

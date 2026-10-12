@@ -2,12 +2,13 @@ import { useState, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import {
   ArrowLeft, ExternalLink, MousePointerClick, Calendar,
-  Clock, ShieldCheck, Copy, Check, Users, Lock, Info, QrCode
+  Clock, ShieldCheck, Copy, Check, Users, Lock, Info, QrCode, Download
 } from 'lucide-react';
 import { getAnalytics } from '../api/url';
 import { API_BASE_URL } from '../api/axiosInstance';
 import { useAuth } from '../context/AuthContext';
 import QrCodeModal from '../components/QrCodeModal';
+import { generateAnalyticsCsv, downloadCsv } from '../utils/csvExport';
 import './AnalyticsPage.css';
 
 const regionNames = new Intl.DisplayNames(['en'], { type: 'region' });
@@ -772,6 +773,23 @@ export default function AnalyticsPage() {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const handleExportCsv = () => {
+    if (!data) return;
+    let rangeLabel = 'Last 7 Days (Default)';
+    if (selectedRange === 'last_month') {
+      const r = getLastMonthRange();
+      rangeLabel = r.monthName;
+    } else if (selectedRange === 'all') {
+      rangeLabel = 'All Time';
+    } else if (selectedRange === 'custom' && customStart && customEnd) {
+      rangeLabel = `Custom (${customStart} to ${customEnd})`;
+    }
+
+    const csvData = generateAnalyticsCsv(data, rangeLabel);
+    const filename = `analytics_${data.shortCode}_${new Date().toISOString().slice(0, 10)}.csv`;
+    downloadCsv(filename, csvData);
+  };
+
   return (
     <div className="analytics-screen">
       {/* ── Top Header ── */}
@@ -797,6 +815,10 @@ export default function AnalyticsPage() {
           <button className="ap-copy-btn" onClick={() => setQrModalOpen(true)} title="View QR Code">
             <QrCode size={15} />
             <span>QR Code</span>
+          </button>
+          <button className="ap-copy-btn ap-export-btn" onClick={handleExportCsv} title="Export analytics data to CSV">
+            <Download size={15} />
+            <span>Export CSV</span>
           </button>
         </div>
       </div>
