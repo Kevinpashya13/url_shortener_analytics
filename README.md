@@ -41,31 +41,31 @@ flowchart TD
     end
 
     subgraph Edge["Reverse Proxy & Static Delivery"]
-        Nginx["Nginx Web Server<br/>(Docker Frontend :80)"]
+        Nginx["Nginx Web Server\n(Docker Frontend :80)"]
     end
 
     subgraph AppCluster["Application Cluster"]
-        SPA["React 19 Dashboard<br/>(Vite + Tailwind CSS)"]
-        API["Express.js REST API<br/>(Node.js 20 LTS)"]
+        SPA["React 19 Dashboard\n(Vite + Tailwind CSS)"]
+        API["Express.js REST API\n(Node.js 20 LTS)"]
     end
 
     subgraph CacheData["Data & Caching Tier"]
-        Redis[("Redis In-Memory Store<br/>URL Cache-Aside & Rate Limiter")]
-        Postgres[("PostgreSQL 16 Database<br/>URLs & Clickstream Analytics")]
+        Redis[("Redis In-Memory Store\n• URL Cache-Aside (TTL 24h)\n• Token Bucket Rate Limiter")]
+        Postgres[("PostgreSQL 16\n• URLs & Tier Gates\n• Clickstream Analytics (Prisma)")]
     end
 
-    Browser -->|"Serves UI & Assets"| Nginx
+    Browser -->|Serves UI / Assets| Nginx
     Nginx --> SPA
-    SPA -->|"RESTful Operations"| API
-    Crawler -->|"Redirect Request (/:code)"| API
+    SPA -->|RESTful Operations| API
+    Crawler -->|Redirect Request (/:code)| API
 
-    API -->|"1. Check Cache / Throttle"| Redis
-    API -->|"2. Read / Write Data"| Postgres
+    API -->|1. Check Cache / Throttle| Redis
+    API -->|2. Read / Write Persistent Records| Postgres
 ```
 
 ---
 
-## 🔄 High-Throughput Redirect Pipeline
+## High-Throughput Redirect Pipeline
 
 Every incoming redirection request adheres to a strictly optimized sequence:
 
@@ -110,10 +110,10 @@ Rather than generating pseudo-random strings and querying the database in an exp
 
 ```mermaid
 flowchart LR
-    ID["Database ID<br/>(e.g., 125,348)"] 
-    --> Mod["Modulo 62 Loop<br/>Alphabet: 0-9, a-z, A-Z"] 
-    --> Slug["Compact Slug<br/>(e.g., 'w9C')"]
-    --> PublicURL["Short URL<br/>https://s.id/w9C"]
+    ID["Database ID\n(e.g., 125,348)"] 
+    --> Mod["Modulo 62 Loop\n[0-9a-zA-Z] Alphabet"] 
+    --> Slug["Compact Slug\n(e.g., 'w9C')"]
+    --> PublicURL["Short URL\nhttps://s.id/w9C"]
 ```
 
 - **Collision probability**: `0.0%` (Guaranteed unique per primary key).
@@ -147,7 +147,7 @@ Spin up the entire production-grade stack (PostgreSQL, Redis, Backend, and Front
 ### 2. Clone & Launch
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/url_shortener_analytics.git
+git clone https://github.com/Kevinpashya13/url_shortener_analytics.git
 cd url_shortener_analytics
 
 # Launch all 4 services in detached mode
