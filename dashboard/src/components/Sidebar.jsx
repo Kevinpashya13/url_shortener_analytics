@@ -1,16 +1,14 @@
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { useToast } from '../context/ToastContext';
 import {
-  Home, BarChart2, Link as LinkIcon, FileText, Settings, LogOut
+  Home, Link as LinkIcon, Settings, LogOut
 } from 'lucide-react';
 import './Sidebar.css';
 
-export default function Sidebar({ activeNav = 'dashboard', setActiveNav, linksCount = 0, firstShortCode }) {
+export default function Sidebar({ activeNav = 'dashboard', setActiveNav, linksCount = 0 }) {
   const { logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const toast = useToast();
 
   const isDashboardPage = location.pathname === '/dashboard';
 
@@ -27,14 +25,6 @@ export default function Sidebar({ activeNav = 'dashboard', setActiveNav, linksCo
       } else {
         navigate('/dashboard', { state: { view: 'links' } });
       }
-    } else if (tabId === 'analytics') {
-      if (firstShortCode) {
-        navigate(`/analytics/${firstShortCode}`);
-      } else {
-        toast.info('Create a short link first to inspect deep analytics.');
-      }
-    } else if (tabId === 'reports') {
-      toast.info('CSV export report will be available in the next release.');
     } else if (tabId === 'settings') {
       navigate('/pricing');
     }
@@ -75,29 +65,11 @@ export default function Sidebar({ activeNav = 'dashboard', setActiveNav, linksCo
 
         <button
           type="button"
-          className={`sidebar-nav-item ${activeNav === 'analytics' ? 'active' : ''}`}
-          onClick={() => handleNavClick('analytics')}
-        >
-          <BarChart2 size={18} />
-          <span>Analytics</span>
-        </button>
-
-        <button
-          type="button"
-          className={`sidebar-nav-item ${activeNav === 'reports' ? 'active' : ''}`}
-          onClick={() => handleNavClick('reports')}
-        >
-          <FileText size={18} />
-          <span>Reports</span>
-        </button>
-
-        <button
-          type="button"
           className={`sidebar-nav-item ${activeNav === 'settings' ? 'active' : ''}`}
           onClick={() => handleNavClick('settings')}
         >
           <Settings size={18} />
-          <span>Settings</span>
+          <span>Settings & Plans</span>
         </button>
       </nav>
 

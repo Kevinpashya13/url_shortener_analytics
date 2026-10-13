@@ -1,27 +1,41 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import {
-  ArrowLeft, ExternalLink, MousePointerClick, Calendar,
-  Clock, ShieldCheck, Copy, Check, Users, Lock, Info, QrCode, Download
+  ArrowLeft, ExternalLink, Calendar, Copy, Check,
+  Lock, Info, QrCode, Download
 } from 'lucide-react';
-import { getAnalytics } from '../api/url';
+import { getAnalytics, getMyUrls } from '../api/url';
 import { API_BASE_URL } from '../api/axiosInstance';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
+import Sidebar from '../components/Sidebar';
 import QrCodeModal from '../components/QrCodeModal';
 import { generateAnalyticsCsv, downloadCsv } from '../utils/csvExport';
-import { useToast } from '../context/ToastContext';
-import { AnalyticsSkeleton } from '../components/Skeleton';
+import './DashboardPage.css';
 import './AnalyticsPage.css';
 
 const regionNames = new Intl.DisplayNames(['en'], { type: 'region' });
 
-function getCountryName(code) {
-  if (!code || code.toLowerCase() === 'unknown') return 'Indonesia';
-  try {
-    return regionNames.of(code.toUpperCase()) || code;
-  } catch {
-    return code;
+function normalizeCountries(countryBreakdown) {
+  if (!countryBreakdown || countryBreakdown.length === 0) return [];
+  const map = {};
+  for (const item of countryBreakdown) {
+    const raw = item.country?.trim()?.toUpperCase() || 'UNKNOWN';
+    let label = 'Unknown';
+    if (raw === 'ID' || raw === 'INDONESIA' || raw === 'UNKNOWN') {
+      label = 'Indonesia';
+    } else {
+      try {
+        label = regionNames.of(raw) || raw;
+      } catch {
+        label = raw;
+      }
+    }
+    map[label] = (map[label] || 0) + (item.count || 0);
   }
+  return Object.entries(map)
+    .map(([name, count]) => ({ name, count }))
+    .sort((a, b) => b.count - a.count);
 }
 
 function toDateKey(date) {
@@ -53,103 +67,13 @@ function getLastMonthRange(refDate = new Date()) {
   return { startDate: toDateKey(start), endDate: toDateKey(end), monthName };
 }
 
-// ── Date Range Filter Component ──────────────────────────────────────────────
-function DateRangeFilter({
-  selectedRange,
-  onSelectRange,
-  customStart,
-  setCustomStart,
-  customEnd,
-  setCustomEnd,
-  onApplyCustom,
-}) {
-  const [showCustom, setShowCustom] = useState(false);
-
-  return (
-    <div className="date-filter-box">
-      <div className="date-presets-row">
-        {[
-          { id: 'last_month', label: 'Last Month' },
-          { id: 'all', label: 'All Time' },
-        ].map((p) => (
-          <button
-            key={p.id}
-            type="button"
-            className={`date-preset-btn ${selectedRange === p.id && !showCustom ? 'active' : ''}`}
-            onClick={() => {
-              setShowCustom(false);
-              onSelectRange(p.id);
-            }}
-          >
-            {p.label}
-          </button>
-        ))}
-
-        <button
-          type="button"
-          className={`date-preset-btn ${selectedRange === 'custom' || showCustom ? 'active' : ''}`}
-          onClick={() => setShowCustom(!showCustom)}
-        >
-          <Calendar size={13} />
-          <span>Custom</span>
-        </button>
-      </div>
-
-      {showCustom && (
-        <div className="date-custom-panel">
-          <div className="date-input-group">
-            <span className="date-field-label">From</span>
-            <input
-              type="date"
-              value={customStart}
-              onChange={(e) => setCustomStart(e.target.value)}
-              className="date-picker-input"
-            />
-          </div>
-          <span className="date-picker-sep">→</span>
-          <div className="date-input-group">
-            <span className="date-field-label">To</span>
-            <input
-              type="date"
-              value={customEnd}
-              onChange={(e) => setCustomEnd(e.target.value)}
-              className="date-picker-input"
-            />
-          </div>
-          <button
-            type="button"
-            className="date-picker-apply"
-            onClick={() => {
-              if (customStart && customEnd) {
-                onApplyCustom(customStart, customEnd);
-                setShowCustom(false);
-              }
-            }}
-          >
-            Apply
-          </button>
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ── Smooth Spline Curve Chart for Single URL ──────────────────────────────────
-function SplineUrlClicksChart({
-  clicksByDay,
-  selectedRange,
-  onSelectRange,
-  customStart,
-  setCustomStart,
-  customEnd,
-  setCustomEnd,
-  onApplyCustom,
-}) {
+// ── Spline Chart Driven by Single URL Clicks (Real Data) ─────────────────────
+function SplineClickAnalyticsChart({ trendData }) {
   const [hoveredIdx, setHoveredIdx] = useState(null);
   const canvasRef = useRef(null);
 
-  const days = (clicksByDay && clicksByDay.length > 0)
-    ? clicksByDay
+  const days = (trendData && trendData.length > 0)
+    ? trendData
     : [
         { date: 'Day 1', count: 0 },
         { date: 'Day 2', count: 0 },
@@ -160,54 +84,50 @@ function SplineUrlClicksChart({
         { date: 'Day 7', count: 0 },
       ];
 
-  const W = 700, H = 240;
-  const pad = { top: 24, right: 30, bottom: 35, left: 40 };
-
   const maxVal = Math.max(...days.map((d) => d.count), 5);
-  const maxY = Math.ceil(maxVal * 1.25);
+  const maxY = Math.ceil(maxVal * 1.3);
+
+  const W = 620, H = 210;
+  const pad = { top: 25, right: 25, bottom: 30, left: 35 };
 
   const getX = (i) => pad.left + (i / Math.max(days.length - 1, 1)) * (W - pad.left - pad.right);
-  const getY = (v) => pad.top + (1 - v / maxY) * (H - pad.top - pad.bottom);
+  const getY = (val) => pad.top + (1 - Math.min(val, maxY) / maxY) * (H - pad.top - pad.bottom);
 
-  // Smooth bezier curve generator
-  const createCurvedPath = () => {
-    if (days.length === 1) {
-      return `M ${getX(0)},${getY(days[0].count)}`;
-    }
-    return days.reduce((acc, point, i, arr) => {
-      const x = getX(i);
-      const y = getY(point.count);
-      if (i === 0) return `M ${x},${y}`;
-      const prevX = getX(i - 1);
-      const prevY = getY(arr[i - 1].count);
-      const cp1x = prevX + (x - prevX) / 2;
-      const cp2x = prevX + (x - prevX) / 2;
-      return `${acc} C ${cp1x},${prevY} ${cp2x},${y} ${x},${y}`;
-    }, '');
-  };
+  // Smooth bezier curve
+  const linePath = days.reduce((acc, pt, i) => {
+    const x = getX(i);
+    const y = getY(pt.count);
+    if (i === 0) return `M ${x},${y}`;
+    const prevX = getX(i - 1);
+    const prevY = getY(days[i - 1].count);
+    const cp1x = prevX + (x - prevX) / 2;
+    const cp2x = prevX + (x - prevX) / 2;
+    return `${acc} C ${cp1x},${prevY} ${cp2x},${y} ${x},${y}`;
+  }, '');
 
-  const linePath = createCurvedPath();
   const areaPath = days.length >= 2
     ? `${linePath} L ${getX(days.length - 1)},${H - pad.bottom} L ${getX(0)},${H - pad.bottom} Z`
     : '';
 
-  // Hover restricted strictly to the SVG chart area itself
+  const yTicks = [
+    0,
+    Math.round(maxY * 0.25),
+    Math.round(maxY * 0.5),
+    Math.round(maxY * 0.75),
+    maxY
+  ];
+
+  const step = Math.max(1, Math.ceil(days.length / 7));
+  const visibleIndices = new Set();
+  for (let i = 0; i < days.length; i += step) visibleIndices.add(i);
+  if (days.length > 1) visibleIndices.add(days.length - 1);
+
+  const isAllZero = days.every((d) => d.count === 0);
+
   const handleMouseMove = (e) => {
     if (!canvasRef.current) return;
     const rect = canvasRef.current.getBoundingClientRect();
     const clientX = e.clientX - rect.left;
-    const clientY = e.clientY - rect.top;
-
-    if (
-      clientX < pad.left - 15 ||
-      clientX > rect.width - (pad.right * rect.width / W) + 15 ||
-      clientY < pad.top - 20 ||
-      clientY > rect.height - (pad.bottom * rect.height / H) + 20
-    ) {
-      setHoveredIdx(null);
-      return;
-    }
-
     const scaleX = W / rect.width;
     const svgX = clientX * scaleX;
 
@@ -222,139 +142,229 @@ function SplineUrlClicksChart({
     setHoveredIdx(closest);
   };
 
-  const yTicks = [0, Math.round(maxY * 0.33), Math.round(maxY * 0.66), maxY];
+  return (
+    <div
+      className="spline-chart-wrap"
+      ref={canvasRef}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={() => setHoveredIdx(null)}
+      style={{ position: 'relative' }}
+    >
+      <svg width="100%" height={H} viewBox={`0 0 ${W} ${H}`} style={{ overflow: 'visible', display: 'block' }}>
+        <defs>
+          <linearGradient id="splineTealGradient" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#086288" stopOpacity="0.22" />
+            <stop offset="100%" stopColor="#086288" stopOpacity="0.0" />
+          </linearGradient>
+        </defs>
 
-  // Non-overlapping X labels computation
-  const maxLabels = 7;
-  const labelStep = Math.max(1, Math.ceil(days.length / maxLabels));
-  const visibleLabelIndices = new Set();
-  for (let i = 0; i < days.length; i += labelStep) {
-    visibleLabelIndices.add(i);
-  }
-  if (days.length > 1) {
-    const lastIdx = days.length - 1;
-    let closestPrev = -1;
-    visibleLabelIndices.forEach((idx) => {
-      if (idx < lastIdx && idx > closestPrev) closestPrev = idx;
-    });
-    if (lastIdx - closestPrev >= Math.max(1, Math.floor(labelStep * 0.6))) {
-      visibleLabelIndices.add(lastIdx);
-    }
+        {/* Y Axis Grid lines */}
+        {yTicks.map((val) => (
+          <g key={val}>
+            <line
+              x1={pad.left} y1={getY(val)}
+              x2={W - pad.right} y2={getY(val)}
+              stroke="#e2edf5" strokeWidth="1"
+            />
+            <text x={pad.left - 8} y={getY(val) + 3} fill="#94a3b8" fontSize="10" textAnchor="end" fontWeight="500">
+              {val >= 1000 ? `${(val / 1000).toFixed(1)}k` : val}
+            </text>
+          </g>
+        ))}
+
+        {/* X Labels */}
+        {days.map((pt, i) => {
+          if (!visibleIndices.has(i)) return null;
+          return (
+            <text key={pt.date + i} x={getX(i)} y={H - 8} fill="#94a3b8" fontSize="10" textAnchor="middle" fontWeight="500">
+              {pt.date}
+            </text>
+          );
+        })}
+
+        {/* Area fill */}
+        {areaPath && <path d={areaPath} fill="url(#splineTealGradient)" />}
+
+        {/* Single real click curve */}
+        <path d={linePath} fill="none" stroke="#086288" strokeWidth="3" strokeLinecap="round" />
+
+        {/* Active Hover Dot on Click Line */}
+        {hoveredIdx !== null && days[hoveredIdx] && (
+          <circle
+            cx={getX(hoveredIdx)}
+            cy={getY(days[hoveredIdx].count)}
+            r="5.5"
+            fill="#086288"
+            stroke="#ffffff"
+            strokeWidth="2.5"
+          />
+        )}
+      </svg>
+
+      {/* Floating Hover Tooltip */}
+      {hoveredIdx !== null && days[hoveredIdx] && (
+        <div
+          className="spline-floating-tooltip"
+          style={{
+            left: `${(getX(hoveredIdx) / W) * 100}%`,
+            top: `${Math.max(getY(days[hoveredIdx].count) - 45, 10)}px`,
+          }}
+        >
+          <span className="tooltip-date">{days[hoveredIdx].date}</span>
+          <span className="tooltip-clicks">{days[hoveredIdx].count.toLocaleString()} clicks</span>
+        </div>
+      )}
+
+      {isAllZero && (
+        <div className="chart-empty-subtle">
+          <Info size={13} />
+          <span>No click sessions recorded in this timeframe</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Top Referring Domains Donut Chart (Real Data) ───────────────────────────
+function TopReferringDomainsCard({ referrers, isStandard }) {
+  if (isStandard) {
+    return (
+      <div className="dash-card card-referring">
+        <div className="card-header-clean">
+          <h3 className="card-clean-title">Top Referring Domains</h3>
+        </div>
+        <div className="card-locked-inline">
+          <Lock size={18} color="#086288" />
+          <p>Referral analytics is available on <strong>Pro</strong> and above.</p>
+          <Link to="/pricing" className="pill-upgrade-link">Upgrade Plan →</Link>
+        </div>
+      </div>
+    );
   }
 
-  const isAllZero = days.length > 0 && days.every((d) => d.count === 0);
+  const raw = referrers || [];
+  const total = raw.reduce((sum, r) => sum + (r.count || 0), 0);
 
-  let subDescription = 'Showing last 7 days (default)';
-  if (selectedRange === 'last_month') {
-    const r = getLastMonthRange();
-    subDescription = r.monthName;
-  } else if (selectedRange === 'all') {
-    subDescription = 'All time traffic';
-  } else if (selectedRange === 'custom' && customStart && customEnd) {
-    subDescription = `Custom (${customStart} to ${customEnd})`;
-  }
+  const colors = ['#f97316', '#14b8a6', '#0284c7', '#eab308', '#8b5cf6'];
+  const items = raw.slice(0, 4).map((r, idx) => ({
+    label: r.referrer === 'direct' ? 'Direct' : (r.referrer || 'Other'),
+    count: r.count,
+    pct: total > 0 ? Math.round((r.count / total) * 100) : 0,
+    color: colors[idx % colors.length],
+  }));
+
+  const radius = 54;
+  const strokeWidth = 20;
+  const circumference = 2 * Math.PI * radius;
+
+  let accumulated = 0;
+  const segments = items.map((c) => {
+    const arc = (c.pct / 100) * circumference;
+    const offset = accumulated;
+    accumulated += arc;
+    return { ...c, arc, offset };
+  });
 
   return (
-    <div className="spline-chart-wrap">
-      <div className="spline-header">
+    <div className="dash-card card-referring">
+      <div className="card-header-clean">
         <div>
-          <div className="spline-title-row">
-            <h3 className="card-section-title">Clicks Timeline</h3>
-          </div>
-          <span className="spline-sub-info">{subDescription}</span>
+          <h3 className="card-clean-title">Top Referring Domains</h3>
+          <span className="card-sub-hint">Traffic sources breakdown</span>
         </div>
-
-        <DateRangeFilter
-          selectedRange={selectedRange}
-          onSelectRange={onSelectRange}
-          customStart={customStart}
-          setCustomStart={setCustomStart}
-          customEnd={customEnd}
-          setCustomEnd={setCustomEnd}
-          onApplyCustom={onApplyCustom}
-        />
       </div>
 
-      {/* Dedicated Chart Canvas — Hover ONLY activates here */}
-      <div
-        className="spline-chart-canvas"
-        ref={canvasRef}
-        onMouseMove={handleMouseMove}
-        onMouseLeave={() => setHoveredIdx(null)}
-      >
-        <svg width="100%" height={H} viewBox={`0 0 ${W} ${H}`} style={{ overflow: 'visible', display: 'block' }}>
-          <defs>
-            <linearGradient id="urlAreaGrad" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.22" />
-              <stop offset="100%" stopColor="#3b82f6" stopOpacity="0.0" />
-            </linearGradient>
-          </defs>
-
-          {/* Horizontal grid lines */}
-          {yTicks.map((val) => (
-            <g key={val}>
-              <line
-                x1={pad.left} y1={getY(val)}
-                x2={W - pad.right} y2={getY(val)}
-                stroke="#f1f5f9" strokeWidth="1.2"
-              />
-              <text x={pad.left - 12} y={getY(val) + 3} fill="#94a3b8" fontSize="11" textAnchor="end">
-                {val}
-              </text>
-            </g>
-          ))}
-
-          {/* Non-overlapping X labels */}
-          {days.map((d, i) => {
-            if (!visibleLabelIndices.has(i)) return null;
-            return (
-              <text key={d.date} x={getX(i)} y={H - 10} fill="#94a3b8" fontSize="11" textAnchor="middle">
-                {d.date.length > 5 ? d.date.slice(5) : d.date}
-              </text>
-            );
-          })}
-
-          {areaPath && <path d={areaPath} fill="url(#urlAreaGrad)" />}
-
-          {/* Main Traffic Curve */}
-          <path d={linePath} fill="none" stroke="#3b82f6" strokeWidth="3.5" strokeLinecap="round" />
-
-          {/* Active hover dot (ONLY when hovered) */}
-          {hoveredIdx !== null && days[hoveredIdx] && (
-            <circle
-              cx={getX(hoveredIdx)}
-              cy={getY(days[hoveredIdx].count)}
-              r="6"
-              fill="#3b82f6"
-              stroke="#ffffff"
-              strokeWidth="2.5"
-            />
-          )}
-        </svg>
-
-        {/* Floating Tooltip Card (ONLY when hovered) */}
-        {hoveredIdx !== null && days[hoveredIdx] && (
-          <div
-            className="spline-tooltip-card"
-            style={{
-              left: `${(getX(hoveredIdx) / W) * 100}%`,
-              top: `${Math.max(getY(days[hoveredIdx].count) - 50, 10)}px`,
-            }}
-          >
-            <div className="tooltip-row">
-              <span className="tooltip-dot blue" />
-              <span className="tooltip-label">{days[hoveredIdx].date}</span>
-            </div>
-            <div className="tooltip-val blue-text">
-              {days[hoveredIdx].count.toLocaleString()}{' '}
-              {days[hoveredIdx].count === 1 ? 'click' : 'clicks'}
-            </div>
+      {items.length === 0 ? (
+        <div className="empty-sub-text">No referral data recorded yet.</div>
+      ) : (
+        <div className="referring-body">
+          <div className="donut-circle-box">
+            <svg viewBox="0 0 150 150" className="donut-ad-svg">
+              <circle cx="75" cy="75" r={radius} fill="none" stroke="#f1f5f9" strokeWidth={strokeWidth} />
+              {segments.map((seg) => (
+                <circle
+                  key={seg.label}
+                  cx="75"
+                  cy="75"
+                  r={radius}
+                  fill="none"
+                  stroke={seg.color}
+                  strokeWidth={strokeWidth}
+                  strokeDasharray={`${seg.arc} ${circumference}`}
+                  strokeDashoffset={-seg.offset}
+                  transform="rotate(-90 75 75)"
+                />
+              ))}
+            </svg>
           </div>
-        )}
-        {isAllZero && (
-          <div className="chart-empty-hint">
-            <Info size={14} className="empty-hint-icon" />
-            <span>Belum ada klik tercatat pada periode ini</span>
+
+          <div className="referring-legend-list">
+            {items.map((c) => (
+              <div className="ref-legend-item" key={c.label}>
+                <span className="ref-dot" style={{ background: c.color }} />
+                <span className="ref-label">{c.label}</span>
+                <span className="ref-pct">{c.pct}%</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Geographic Distribution Card (Real Country Data) ────────────────────────
+function VisitorGeographicCard({ countryBreakdown, isStandard }) {
+  if (isStandard) {
+    return (
+      <div className="dash-card card-geo">
+        <div className="card-header-clean">
+          <h3 className="card-clean-title">Geographic Distribution</h3>
+        </div>
+        <div className="card-locked-inline">
+          <Lock size={18} color="#086288" />
+          <p>Location analytics is available on <strong>Pro</strong> and above.</p>
+          <Link to="/pricing" className="pill-upgrade-link">Upgrade Plan →</Link>
+        </div>
+      </div>
+    );
+  }
+
+  const countries = normalizeCountries(countryBreakdown);
+  const totalCountryClicks = countries.reduce((sum, c) => sum + c.count, 0) || 1;
+
+  return (
+    <div className="dash-card card-geo">
+      <div className="card-header-clean">
+        <div>
+          <h3 className="card-clean-title">Geographic Distribution</h3>
+          <span className="card-sub-hint">Visitor traffic grouped by real country</span>
+        </div>
+        <span className="geo-total-pill">{countries.length} Region{countries.length === 1 ? '' : 's'}</span>
+      </div>
+
+      <div className="geo-body-clean">
+        {countries.length === 0 ? (
+          <div className="empty-sub-text">No location data recorded yet.</div>
+        ) : (
+          <div className="geo-countries-progress-list">
+            {countries.map((c) => {
+              const pct = Math.round((c.count / totalCountryClicks) * 100);
+              return (
+                <div className="geo-country-item" key={c.name}>
+                  <div className="geo-country-info">
+                    <span className="geo-country-name">{c.name}</span>
+                    <span className="geo-country-stats">
+                      <strong>{c.count.toLocaleString()}</strong> clicks{' '}
+                      <span className="geo-pct">({pct}%)</span>
+                    </span>
+                  </div>
+                  <div className="geo-progress-track">
+                    <div className="geo-progress-fill" style={{ width: `${Math.max(6, pct)}%` }} />
+                  </div>
+                </div>
+              );
+            })}
           </div>
         )}
       </div>
@@ -362,332 +372,161 @@ function SplineUrlClicksChart({
   );
 }
 
-// ── Donut Chart (Device) ───────────────────────────────────────────────────
-function DeviceDonutChart({ breakdown, isStandard, unit = 'Clicks' }) {
+// ── Donut Device Chart Card ──────────────────────────────────────────────────
+function DeviceDonutChartCard({ breakdown, isStandard }) {
   const [hoveredKey, setHoveredKey] = useState(null);
 
   if (isStandard) {
     return (
-      <div className="dash-box">
-        <div className="box-header">
-          <h3 className="card-section-title">Session by Device</h3>
+      <div className="dash-card">
+        <div className="card-header-clean">
+          <h3 className="card-clean-title">Session by Device</h3>
         </div>
-        <div className="chart-locked-box">
-          <Lock size={20} color="#6366f1" />
-          <p>Device breakdown is available on <strong>Pro</strong> and above.</p>
-          <Link to="/pricing" className="pill-badge">Upgrade Plan →</Link>
+        <div className="card-locked-inline">
+          <Lock size={18} color="#086288" />
+          <p>Device analytics is available on <strong>Pro</strong> and above.</p>
+          <Link to="/pricing" className="pill-upgrade-link">Upgrade Plan →</Link>
         </div>
       </div>
     );
   }
 
-  const items = breakdown || [];
-  const desktopCount = items.find((b) => b.deviceType?.toLowerCase() === 'desktop')?.count || 0;
-  const mobileCount = items.find((b) => b.deviceType?.toLowerCase() === 'mobile')?.count || 0;
-  const tabletCount = items.find((b) => b.deviceType?.toLowerCase() === 'tablet')?.count || 0;
-
-  const knownTypes = ['desktop', 'mobile', 'tablet'];
-  const otherCount = items
-    .filter((b) => !knownTypes.includes(b.deviceType?.toLowerCase()))
-    .reduce((acc, curr) => acc + (curr.count || 0), 0);
-
-  const total = desktopCount + mobileCount + tabletCount + otherCount;
+  const raw = breakdown || {};
+  const total = (raw.mobile || 0) + (raw.desktop || 0) + (raw.tablet || 0) + (raw.other || 0);
 
   const devices = [
-    { key: 'desktop', label: 'Desktop', count: desktopCount, color: '#3b82f6' },
-    { key: 'mobile', label: 'Mobile', count: mobileCount, color: '#044e43' },
-    { key: 'tablet', label: 'Tablet', count: tabletCount, color: '#f87171' },
-  ];
+    { key: 'mobile', label: 'Mobile', count: raw.mobile || 0, color: '#086288' },
+    { key: 'desktop', label: 'Desktop', count: raw.desktop || 0, color: '#14b8a6' },
+    { key: 'tablet', label: 'Tablet', count: raw.tablet || 0, color: '#f97316' },
+    { key: 'other', label: 'Other', count: raw.other || 0, color: '#94a3b8' },
+  ].map((d) => ({
+    ...d,
+    pct: total > 0 ? Math.round((d.count / total) * 100) : 0,
+  }));
 
-  if (otherCount > 0) {
-    devices.push({ key: 'other', label: 'Other', count: otherCount, color: '#8b5cf6' });
-  }
-
-  devices.forEach((d) => {
-    d.pct = total > 0 ? Math.round((d.count / total) * 100) : 0;
-  });
-
-  const strokeWidth = 22;
-  const radius = 68;
+  const radius = 54;
+  const strokeWidth = 18;
   const circumference = 2 * Math.PI * radius;
 
-  const activeDevices = devices.filter((d) => d.count > 0);
-  const gap = activeDevices.length > 1 ? 3 : 0;
-  const totalGap = gap * activeDevices.length;
-  const availableLength = Math.max(0, circumference - totalGap);
-
-  let accumulatedLength = 0;
-  const segments = activeDevices.map((d) => {
-    const fraction = total > 0 ? d.count / total : 0;
-    const arcLength = fraction * availableLength;
-    const offset = accumulatedLength;
-    accumulatedLength += arcLength + gap;
-    return {
-      ...d,
-      arcLength,
-      offset,
-    };
+  let accumulated = 0;
+  const segments = devices.map((d) => {
+    const arc = (d.pct / 100) * circumference;
+    const offset = accumulated;
+    accumulated += arc;
+    return { ...d, arc, offset };
   });
 
-  const activeDevice = hoveredKey ? devices.find((d) => d.key === hoveredKey) : null;
-
   return (
-    <div className="dash-box">
-      <div className="box-header">
-        <h3 className="card-section-title">Session by Device</h3>
+    <div className="dash-card">
+      <div className="card-header-clean">
+        <div>
+          <h3 className="card-clean-title">Session by Device</h3>
+          <span className="card-sub-hint">Hardware device category</span>
+        </div>
       </div>
 
-      <div className="donut-graphic-wrap">
-        <svg viewBox="0 0 200 200" className="donut-svg">
-          {/* Background Track */}
-          <circle
-            cx="100"
-            cy="100"
-            r={radius}
-            fill="none"
-            stroke="#f1f5f9"
-            strokeWidth={strokeWidth}
-          />
-
-          {/* Active Data Segments */}
-          {total > 0 && segments.map((seg) => {
-            const isHovered = hoveredKey === seg.key;
-            return (
-              <circle
-                key={seg.key}
-                cx="100"
-                cy="100"
-                r={radius}
-                fill="none"
-                stroke={seg.color}
-                strokeWidth={isHovered ? strokeWidth + 4 : strokeWidth}
-                strokeDasharray={`${seg.arcLength} ${circumference}`}
-                strokeDashoffset={-seg.offset}
-                transform="rotate(-90 100 100)"
-                className="donut-segment"
-                onMouseEnter={() => setHoveredKey(seg.key)}
-                onMouseLeave={() => setHoveredKey(null)}
-                style={{
-                  transition: 'stroke-width 0.2s ease, opacity 0.2s ease',
-                  opacity: hoveredKey && !isHovered ? 0.45 : 1,
-                  cursor: 'pointer',
-                }}
-              />
-            );
-          })}
-
-          {/* Center Text */}
-          <text
-            x="100"
-            y={activeDevice ? 94 : 96}
-            textAnchor="middle"
-            fill="#0f172a"
-            fontSize={activeDevice ? 22 : 24}
-            fontWeight="800"
-          >
-            {activeDevice ? `${activeDevice.pct}%` : (total > 0 ? total.toLocaleString() : '0')}
-          </text>
-          <text
-            x="100"
-            y={activeDevice ? 114 : 116}
-            textAnchor="middle"
-            fill="#94a3b8"
-            fontSize="11"
-            fontWeight="600"
-          >
-            {activeDevice ? activeDevice.label : (total > 0 ? unit : 'No Data')}
-          </text>
-        </svg>
-      </div>
-
-      <div className="device-legend-row">
-        {devices.map((d) => (
-          <div
-            key={d.key}
-            className={`dev-pill ${hoveredKey === d.key ? 'active' : ''}`}
-            onMouseEnter={() => setHoveredKey(d.key)}
-            onMouseLeave={() => setHoveredKey(null)}
-          >
-            <span className="dev-badge" style={{ color: d.color }}>●</span>
-            <span className="dev-count">{d.count.toLocaleString()}</span>
-            <span className="dev-name">{d.label}</span>
+      {total === 0 ? (
+        <div className="empty-sub-text">No device telemetry recorded yet.</div>
+      ) : (
+        <div className="referring-body">
+          <div className="donut-circle-box">
+            <svg viewBox="0 0 150 150" className="donut-ad-svg">
+              <circle cx="75" cy="75" r={radius} fill="none" stroke="#f1f5f9" strokeWidth={strokeWidth} />
+              {segments.map((seg) => (
+                <circle
+                  key={seg.key}
+                  cx="75"
+                  cy="75"
+                  r={radius}
+                  fill="none"
+                  stroke={seg.color}
+                  strokeWidth={hoveredKey === seg.key ? strokeWidth + 3 : strokeWidth}
+                  strokeDasharray={`${seg.arc} ${circumference}`}
+                  strokeDashoffset={-seg.offset}
+                  transform="rotate(-90 75 75)"
+                  onMouseEnter={() => setHoveredKey(seg.key)}
+                  onMouseLeave={() => setHoveredKey(null)}
+                  style={{ cursor: 'pointer', transition: 'stroke-width 0.15s ease' }}
+                />
+              ))}
+            </svg>
           </div>
-        ))}
-      </div>
+
+          <div className="referring-legend-list">
+            {devices.map((d) => (
+              <div
+                className="ref-legend-item"
+                key={d.key}
+                onMouseEnter={() => setHoveredKey(d.key)}
+                onMouseLeave={() => setHoveredKey(null)}
+                style={{ cursor: 'pointer', opacity: hoveredKey && hoveredKey !== d.key ? 0.5 : 1 }}
+              >
+                <span className="ref-dot" style={{ background: d.color }} />
+                <span className="ref-label">{d.label}</span>
+                <span className="ref-pct">{d.count} ({d.pct}%)</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
-// ── Browser Breakdown ────────────────────────────────────────────────────────
+// ── Browser Breakdown Card ───────────────────────────────────────────────────
 function BrowserBreakdownCard({ breakdown, isStandard }) {
   if (isStandard) {
     return (
-      <div className="dash-box">
-        <div className="box-header">
-          <h3 className="card-section-title">Session by Browser</h3>
+      <div className="dash-card">
+        <div className="card-header-clean">
+          <h3 className="card-clean-title">Session by Browser</h3>
         </div>
-        <div className="chart-locked-box">
-          <Lock size={20} color="#6366f1" />
-          <p>Browser breakdown is available on <strong>Pro</strong> and above.</p>
-          <Link to="/pricing" className="pill-badge">Upgrade Plan →</Link>
-        </div>
-      </div>
-    );
-  }
-
-  const items = breakdown || [];
-  const totalBrowserClicks = items.reduce((acc, curr) => acc + (curr.count || 0), 0) || 1;
-
-  const browsers = items
-    .filter((b) => b.browser && b.count > 0)
-    .slice(0, 5)
-    .map((b) => {
-      const name = b.browser === 'unknown' ? 'Unknown Browser' : b.browser;
-      const pct = Math.round((b.count / totalBrowserClicks) * 100);
-      return {
-        name,
-        count: b.count,
-        pct,
-      };
-    });
-
-  return (
-    <div className="dash-box">
-      <div className="box-header">
-        <h3 className="card-section-title">Session by Browser</h3>
-      </div>
-
-      {browsers.length === 0 ? (
-        <p className="no-data-hint" style={{ padding: '24px 0', textAlign: 'center' }}>
-          No browser data recorded yet.
-        </p>
-      ) : (
-        <div className="browser-bars-list">
-          {browsers.map((b) => (
-            <div className="browser-bar-item" key={b.name}>
-              <div className="browser-bar-info">
-                <span className="browser-name-text">{b.name}</span>
-                <span className="browser-count-text">
-                  {b.count.toLocaleString()}{' '}
-                  <span className="browser-pct-text">({b.pct}%)</span>
-                </span>
-              </div>
-              <div className="browser-bar-track">
-                <div
-                  className="browser-bar-fill"
-                  style={{ width: `${Math.max(4, b.pct)}%` }}
-                />
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ── Country Breakdown ─────────────────────────────────────────────────────────
-function WorldActiveUsersCard({ breakdown, isStandard, totalClicks }) {
-  if (isStandard) {
-    return (
-      <div className="dash-box">
-        <div className="box-header">
-          <h3 className="card-section-title">Visitors by Location</h3>
-        </div>
-        <div className="chart-locked-box">
-          <Lock size={20} color="#6366f1" />
-          <p>Location analytics is available on <strong>Pro</strong> and above.</p>
-          <Link to="/pricing" className="pill-badge">Upgrade Plan →</Link>
+        <div className="card-locked-inline">
+          <Lock size={18} color="#086288" />
+          <p>Browser analytics is available on <strong>Pro</strong> and above.</p>
+          <Link to="/pricing" className="pill-upgrade-link">Upgrade Plan →</Link>
         </div>
       </div>
     );
   }
 
   const items = breakdown || [];
-  const totalCountryClicks = items.reduce((acc, curr) => acc + (curr.count || 0), 0) || totalClicks || 1;
-
-  const countries = items.slice(0, 5).map((c) => {
-    const name = getCountryName(c.country);
-    const count = c.count || 0;
-    const pct = Math.round((count / totalCountryClicks) * 100);
-    return { name, count, pct };
-  });
+  const total = items.reduce((sum, b) => sum + (b.count || 0), 0) || 1;
 
   return (
-    <div className="dash-box">
-      <div className="box-header">
-        <h3 className="card-section-title">Visitors by Location</h3>
-      </div>
-
-      {countries.length === 0 ? (
-        <p className="no-data-hint" style={{ padding: '24px 0', textAlign: 'center' }}>
-          No location data recorded yet for this URL.
-        </p>
-      ) : (
-        <div className="country-bars-list">
-          {countries.map((c) => (
-            <div className="country-bar-item" key={c.name}>
-              <div className="country-bar-info">
-                <span className="country-name-text">{c.name}</span>
-                <span className="country-count-text">
-                  {c.count.toLocaleString()}{' '}
-                  <span className="country-pct-text">({c.pct}%)</span>
-                </span>
-              </div>
-              <div className="country-bar-track">
-                <div
-                  className="country-bar-fill"
-                  style={{ width: `${Math.max(4, c.pct)}%` }}
-                />
-              </div>
-            </div>
-          ))}
+    <div className="dash-card">
+      <div className="card-header-clean">
+        <div>
+          <h3 className="card-clean-title">Session by Browser</h3>
+          <span className="card-sub-hint">Web client & browser distribution</span>
         </div>
-      )}
-    </div>
-  );
-}
-
-// ── Horizontal Referrer Card ──────────────────────────────────────────────────
-function TopReferrersCard({ referrers, isStandard }) {
-  if (isStandard) {
-    return (
-      <div className="dash-box">
-        <div className="box-header">
-          <h3 className="card-section-title">Top Traffic Referrers</h3>
-        </div>
-        <div className="chart-locked-box">
-          <Lock size={20} color="#6366f1" />
-          <p>Referrer analytics is available on <strong>Pro</strong> and above.</p>
-          <Link to="/pricing" className="pill-badge">Upgrade Plan →</Link>
-        </div>
-      </div>
-    );
-  }
-
-  const items = referrers || [];
-  const maxCount = Math.max(...items.map((r) => r.count), 1);
-
-  return (
-    <div className="dash-box">
-      <div className="box-header">
-        <h3 className="card-section-title">Top Traffic Referrers</h3>
-        <span className="quota-pill">{items.length} Sources</span>
+        <span className="geo-total-pill">{items.length} Client{items.length === 1 ? '' : 's'}</span>
       </div>
 
       {items.length === 0 ? (
-        <p className="no-data-hint">No referrer data recorded yet for this URL.</p>
+        <div className="empty-sub-text">No browser telemetry recorded yet.</div>
       ) : (
-        <div className="referrers-bars-wrap">
-          {items.slice(0, 6).map((r) => {
-            const pct = Math.round((r.count / maxCount) * 100);
+        <div className="geo-countries-progress-list" style={{ marginTop: '8px' }}>
+          {items.slice(0, 4).map((b) => {
+            const pct = Math.round(((b.count || 0) / total) * 100);
             return (
-              <div className="ref-row" key={r.referrer}>
-                <span className="ref-label">{r.referrer || 'Direct / None'}</span>
-                <div className="ref-track">
-                  <div className="ref-fill" style={{ width: `${pct}%` }} />
+              <div className="geo-country-item" key={b.browser || 'Unknown'}>
+                <div className="geo-country-info">
+                  <span className="geo-country-name">{b.browser || 'Unknown'}</span>
+                  <span className="geo-country-stats">
+                    <strong>{(b.count || 0).toLocaleString()}</strong> clicks{' '}
+                    <span className="geo-pct">({pct}%)</span>
+                  </span>
                 </div>
-                <span className="ref-count">{r.count.toLocaleString()}</span>
+                <div className="geo-progress-track">
+                  <div
+                    className="geo-progress-fill"
+                    style={{
+                      width: `${Math.max(6, pct)}%`,
+                      background: 'linear-gradient(90deg, #0284c7 0%, #38bdf8 100%)'
+                    }}
+                  />
+                </div>
               </div>
             );
           })}
@@ -697,31 +536,60 @@ function TopReferrersCard({ referrers, isStandard }) {
   );
 }
 
-// ── Main Analytics Page ───────────────────────────────────────────────────────
+// ── Main Analytics Page Component ─────────────────────────────────────────────
 export default function AnalyticsPage() {
   const { shortCode } = useParams();
   const { user } = useAuth();
   const toast = useToast();
+
   const [data, setData] = useState(null);
+  const [linksCount, setLinksCount] = useState(0);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [copied, setCopied] = useState(false);
   const [qrModalOpen, setQrModalOpen] = useState(false);
 
-  const [selectedRange, setSelectedRange] = useState(null); // null = default 7 days
+  // Date Filter State
+  const [selectedRange, setSelectedRange] = useState(null); // null = 7 days
   const [customStart, setCustomStart] = useState('');
   const [customEnd, setCustomEnd] = useState('');
+  const [showDateDropdown, setShowDateDropdown] = useState(false);
+  const dropdownRef = useRef(null);
 
   const role = user?.role || 'STANDARD';
   const isStandard = role === 'STANDARD';
 
+  // Close date popover on outside click
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setShowDateDropdown(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Fetch all user links to populate sidebar link count
+  useEffect(() => {
+    getMyUrls()
+      .then((res) => {
+        if (Array.isArray(res.data)) setLinksCount(res.data.length);
+      })
+      .catch(() => {});
+  }, []);
+
+  // Fetch detailed analytics for the current short code
   const fetchDetailAnalytics = async (params = {}) => {
+    setLoading(true);
     try {
       const res = await getAnalytics(shortCode, params);
       setData(res.data);
       setError('');
     } catch (err) {
-      console.error('Failed to load url analytics:', err);
       setError(err.response?.data?.error || 'Failed to load analytics');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -730,13 +598,15 @@ export default function AnalyticsPage() {
   }, [shortCode]);
 
   const handleSelectRange = (rangeId) => {
-    if (rangeId === selectedRange || rangeId === 'default') {
+    if (rangeId === selectedRange || rangeId === '7days') {
       setSelectedRange(null);
+      setShowDateDropdown(false);
       fetchDetailAnalytics({ days: 7 });
       return;
     }
 
     setSelectedRange(rangeId);
+    setShowDateDropdown(false);
 
     if (rangeId === 'last_month') {
       const { startDate, endDate } = getLastMonthRange();
@@ -746,29 +616,24 @@ export default function AnalyticsPage() {
     }
   };
 
-  const handleApplyCustom = (start, end) => {
+  const handleApplyCustom = () => {
+    if (!customStart || !customEnd) return;
     setSelectedRange('custom');
-    fetchDetailAnalytics({ startDate: start, endDate: end });
+    setShowDateDropdown(false);
+    fetchDetailAnalytics({ startDate: customStart, endDate: customEnd });
   };
 
-  if (error) {
-    return (
-      <div className="analytics-screen">
-        <div className="dash-top-bar" style={{ marginBottom: '24px' }}>
-          <Link to="/dashboard" className="ap-back-btn">
-            <ArrowLeft size={15} /> Back to Dashboard
-          </Link>
-        </div>
-        <div className="empty-state-box" style={{ padding: '80px 20px', textAlign: 'center' }}>
-          <p style={{ color: '#ef4444', fontWeight: 600, fontSize: '1.1rem' }}>{error}</p>
-        </div>
-      </div>
-    );
+  let dateRangeLabel = 'Last 7 Days';
+  if (selectedRange === 'last_month') {
+    const r = getLastMonthRange();
+    dateRangeLabel = r.monthName;
+  } else if (selectedRange === 'all') {
+    dateRangeLabel = 'All Time';
+  } else if (selectedRange === 'custom' && customStart && customEnd) {
+    dateRangeLabel = `${customStart} → ${customEnd}`;
   }
 
-  if (!data) return <AnalyticsSkeleton />;
-
-  const shortUrl = `${API_BASE_URL}/${data.shortCode}`;
+  const shortUrl = `${API_BASE_URL}/${data?.shortCode || shortCode}`;
 
   const handleCopy = () => {
     navigator.clipboard.writeText(shortUrl);
@@ -795,130 +660,272 @@ export default function AnalyticsPage() {
     toast.success('Analytics exported to CSV!');
   };
 
+  const todayClicks = data?.clicksByDay?.[data.clicksByDay.length - 1]?.count ?? 0;
+  const isExpired = data?.expiredAt && new Date(data.expiredAt) < new Date();
+
   return (
-    <div className="analytics-screen">
-      {/* ── Top Header ── */}
-      <div className="dash-top-bar">
-        <div>
-          <Link to="/dashboard" className="ap-back-btn">
-            <ArrowLeft size={15} /> Back to Dashboard
-          </Link>
-          <h1 className="dash-main-title" style={{ marginTop: '8px' }}>
-            /{data.shortCode}
-          </h1>
-          <a href={data.originalUrl} target="_blank" rel="noreferrer" className="ap-dest-link">
-            <span>{data.originalUrl}</span>
-            <ExternalLink size={13} />
-          </a>
-        </div>
+    <div className="ad-dashboard-layout">
+      {/* ── STANDALONE APP SIDEBAR COMPONENT ── */}
+      <Sidebar
+        activeNav="links"
+        linksCount={linksCount}
+        firstShortCode={shortCode}
+      />
 
-        <div className="dash-user-area">
-          <button className="ap-copy-btn" onClick={handleCopy}>
-            {copied ? <Check size={15} color="#16a34a" /> : <Copy size={15} />}
-            <span>{copied ? 'Copied Link' : 'Copy Short Link'}</span>
-          </button>
-          <button className="ap-copy-btn" onClick={() => setQrModalOpen(true)} title="View QR Code">
-            <QrCode size={15} />
-            <span>QR Code</span>
-          </button>
-          <button className="ap-copy-btn ap-export-btn" onClick={handleExportCsv} title="Export analytics data to CSV">
-            <Download size={15} />
-            <span>Export CSV</span>
-          </button>
-        </div>
-      </div>
-
-      {/* ── Main Grid Layout ── */}
-      <div className="dash-grid-layout">
-
-        {/* ── Left Column ── */}
-        <div className="dash-col-left">
-
-          {/* 3 KPI Stats */}
-          <div className="kpi-three-grid">
-            <div className="kpi-card">
-              <span className="kpi-label">Total Clicks</span>
-              <div className="kpi-num">{data.totalClicks.toLocaleString()}</div>
-              <div className="kpi-trend green">
-                <MousePointerClick size={13} /> Realtime clicks
-              </div>
-            </div>
-
-            <div className="kpi-card">
-              <span className="kpi-label">Creation Date</span>
-              <div className="kpi-num" style={{ fontSize: '1.45rem', marginTop: '4px' }}>
-                {new Date(data.createdAt).toLocaleDateString()}
-              </div>
-              <div className="kpi-trend green">
-                <Calendar size={13} /> Active link
-              </div>
-            </div>
-
-            <div className="kpi-card">
-              <span className="kpi-label">{data.expiredAt ? 'Link Expiry' : 'Fallback Status'}</span>
-              <div className="kpi-num" style={{ fontSize: '1.45rem', marginTop: '4px' }}>
-                {data.expiredAt ? new Date(data.expiredAt).toLocaleDateString() : (data.fallbackUrl ? 'Custom' : 'Default 404')}
-              </div>
-              <div className="kpi-trend">
-                {data.expiredAt ? <Clock size={13} color="#f59e0b" /> : <ShieldCheck size={13} color="#6366f1" />}
-                <span className="kpi-vs">{data.fallbackUrl ? 'Redirect set' : 'Standard'}</span>
-              </div>
-            </div>
+      {/* ── MAIN CONTENT CANVAS ── */}
+      <main className="ad-main-canvas">
+        {/* Top Header Bar */}
+        <header className="ad-top-bar">
+          <div className="search-capsule" style={{ width: 'auto', minWidth: '220px' }}>
+            <ArrowLeft size={16} className="search-icon" />
+            <Link
+              to="/dashboard"
+              style={{
+                textDecoration: 'none',
+                color: '#1e293b',
+                fontSize: '0.88rem',
+                fontWeight: 600,
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px'
+              }}
+            >
+              Back to Dashboard
+            </Link>
           </div>
 
-          {/* Spline Chart with Date Range Controls */}
-          <div className="dash-box">
-            <SplineUrlClicksChart
-              clicksByDay={data.clicksByDay}
-              selectedRange={selectedRange}
-              onSelectRange={handleSelectRange}
-              customStart={customStart}
-              setCustomStart={setCustomStart}
-              customEnd={customEnd}
-              setCustomEnd={setCustomEnd}
-              onApplyCustom={handleApplyCustom}
-            />
+          <div className="top-right-actions">
+            <button
+              type="button"
+              className="btn-new-link"
+              onClick={handleCopy}
+              title="Copy Short Link"
+            >
+              {copied ? <Check size={16} /> : <Copy size={16} />}
+              <span>{copied ? 'Copied!' : 'Copy Link'}</span>
+            </button>
+
+            <button
+              type="button"
+              className="icon-btn-round"
+              onClick={() => setQrModalOpen(true)}
+              title="View QR Code"
+            >
+              <QrCode size={18} />
+            </button>
+
+            <button
+              type="button"
+              className="icon-btn-round"
+              onClick={handleExportCsv}
+              title="Export CSV Report"
+              disabled={!data}
+            >
+              <Download size={18} />
+            </button>
+
+            <div className="user-profile-circle" title={user?.email}>
+              <span>{user?.email?.charAt(0).toUpperCase() || 'U'}</span>
+            </div>
           </div>
+        </header>
 
-          {/* World Active Users */}
-          <WorldActiveUsersCard
-            breakdown={data.countryBreakdown}
-            isStandard={isStandard}
-            totalClicks={data.totalClicks}
-          />
+        {error ? (
+          <div className="dash-card" style={{ padding: '60px 20px', textAlign: 'center', marginTop: '20px' }}>
+            <p style={{ color: '#ef4444', fontWeight: 700, fontSize: '1.05rem', margin: '0 0 16px' }}>{error}</p>
+            <Link to="/dashboard" className="btn-new-link" style={{ display: 'inline-flex', margin: '0 auto' }}>
+              ← Return to Dashboard
+            </Link>
+          </div>
+        ) : loading && !data ? (
+          <div className="dash-card" style={{ padding: '80px 20px', textAlign: 'center', marginTop: '20px' }}>
+            <p style={{ color: '#086288', fontWeight: 600 }}>Loading analytics for /{shortCode}...</p>
+          </div>
+        ) : data && (
+          <>
+            {/* Subheader: Overview Title & Interactive Date Picker */}
+            <div className="ad-subheader-row">
+              <div className="subheader-title-group">
+                <h1 className="overview-title">
+                  Overview: <span className="overview-link">/{data.shortCode}</span>
+                </h1>
+                <a
+                  href={data.originalUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="overview-date-pill"
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', textDecoration: 'none', color: '#64748b' }}
+                  title={data.originalUrl}
+                >
+                  <span style={{ maxWidth: '300px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {data.originalUrl}
+                  </span>
+                  <ExternalLink size={13} />
+                </a>
+              </div>
 
-          {/* Traffic Referrers */}
-          <TopReferrersCard
-            referrers={data.topReferrers}
-            isStandard={isStandard}
-          />
-        </div>
+              {/* Interactive Date Range Dropdown Popover */}
+              <div className="date-picker-anchor" ref={dropdownRef}>
+                <button
+                  type="button"
+                  className="date-display-badge"
+                  onClick={() => setShowDateDropdown(!showDateDropdown)}
+                >
+                  <span>Dated: {dateRangeLabel}</span>
+                  <Calendar size={15} />
+                </button>
 
-        {/* ── Right Column ── */}
-        <div className="dash-col-right">
-          {/* Donut Device Chart */}
-          <DeviceDonutChart
-            breakdown={data.deviceBreakdown}
-            isStandard={isStandard}
-            unit="Clicks"
-          />
+                {showDateDropdown && (
+                  <div className="date-dropdown-card">
+                    <div className="date-dropdown-header">Filter Range</div>
+                    <div className="date-preset-buttons">
+                      <button
+                        type="button"
+                        className={`date-chip ${!selectedRange ? 'active' : ''}`}
+                        onClick={() => handleSelectRange('7days')}
+                      >
+                        Last 7 Days
+                      </button>
+                      <button
+                        type="button"
+                        className={`date-chip ${selectedRange === 'last_month' ? 'active' : ''}`}
+                        onClick={() => handleSelectRange('last_month')}
+                      >
+                        Last Month
+                      </button>
+                      <button
+                        type="button"
+                        className={`date-chip ${selectedRange === 'all' ? 'active' : ''}`}
+                        onClick={() => handleSelectRange('all')}
+                      >
+                        All Time
+                      </button>
+                    </div>
 
-          {/* Browser Breakdown Card */}
-          <BrowserBreakdownCard
-            breakdown={data.browserBreakdown}
-            isStandard={isStandard}
-          />
-        </div>
+                    <div className="date-custom-divider">Custom Range</div>
+                    <div className="date-inputs-row">
+                      <input
+                        type="date"
+                        value={customStart}
+                        onChange={(e) => setCustomStart(e.target.value)}
+                        className="date-native-input"
+                      />
+                      <span className="date-arrow">→</span>
+                      <input
+                        type="date"
+                        value={customEnd}
+                        onChange={(e) => setCustomEnd(e.target.value)}
+                        className="date-native-input"
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      className="btn-apply-custom-date"
+                      onClick={handleApplyCustom}
+                      disabled={!customStart || !customEnd}
+                    >
+                      Apply Filter
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
 
-      </div>
+            {/* ── 4 COLORFUL KPI STAT CARDS (Matching Dashboard Theme) ── */}
+            <div className="ad-kpi-row">
+              {/* Card 1: Total Clicks */}
+              <div className="ad-kpi-card kpi-blue-dark">
+                <span className="kpi-card-label">Total Clicks</span>
+                <div className="kpi-card-val-row">
+                  <span className="kpi-card-val">
+                    {(data.filteredClicks ?? data.totalClicks ?? 0).toLocaleString()}
+                  </span>
+                  <span className="kpi-card-badge">Realtime</span>
+                </div>
+              </div>
+
+              {/* Card 2: Created Date */}
+              <div className="ad-kpi-card kpi-teal">
+                <span className="kpi-card-label">Created Date</span>
+                <div className="kpi-card-val-row">
+                  <span className="kpi-card-val" style={{ fontSize: '1.25rem' }}>
+                    {data.createdAt ? new Date(data.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '-'}
+                  </span>
+                  <span className="kpi-card-badge">Active</span>
+                </div>
+              </div>
+
+              {/* Card 3: Link Expiration */}
+              <div className="ad-kpi-card kpi-orange">
+                <span className="kpi-card-label">Link Expiration</span>
+                <div className="kpi-card-val-row">
+                  <span className="kpi-card-val" style={{ fontSize: '1.25rem' }}>
+                    {data.expiredAt ? new Date(data.expiredAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Never'}
+                  </span>
+                  <span className="kpi-card-badge">
+                    {data.expiredAt ? 'Has Expiry' : 'Permanent'}
+                  </span>
+                </div>
+              </div>
+
+              {/* Card 4: Link Status */}
+              <div className="ad-kpi-card kpi-sky">
+                <span className="kpi-card-label">Link Status</span>
+                <div className="kpi-card-val-row">
+                  <span className="kpi-card-val">
+                    {isExpired ? 'Expired' : 'Active'}
+                  </span>
+                  <span className="kpi-card-badge">
+                    {data.fallbackUrl ? 'Fallback Set' : 'Normal'}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* ── BALANCED 2-COLUMN MIDDLE GRID (Chart + Referrers) ── */}
+            <div className="ad-middle-grid">
+              {/* Left Block: Click Analytics Spline Chart */}
+              <div className="dash-card card-analytics">
+                <div className="card-header-clean">
+                  <div>
+                    <h3 className="card-clean-title">Click Analytics</h3>
+                    <span className="card-sub-hint">Daily traffic trend for /{data.shortCode}</span>
+                  </div>
+                  <div className="chart-today-pill">
+                    <span className="today-pill-dot" />
+                    <span>Today: <strong>{todayClicks.toLocaleString()}</strong> clicks</span>
+                  </div>
+                </div>
+                <SplineClickAnalyticsChart trendData={data.clicksByDay} />
+              </div>
+
+              {/* Right Block: Top Referring Domains Donut */}
+              <TopReferringDomainsCard referrers={data.topReferrers} isStandard={isStandard} />
+            </div>
+
+            {/* ── GEOGRAPHIC DISTRIBUTION CARD ── */}
+            <div className="ad-geo-section">
+              <VisitorGeographicCard countryBreakdown={data.countryBreakdown} isStandard={isStandard} />
+            </div>
+
+            {/* ── BOTTOM 2-COLUMN GRID (Device & Browser Breakdown) ── */}
+            <div className="ad-bottom-grid">
+              <DeviceDonutChartCard breakdown={data.deviceBreakdown} isStandard={isStandard} />
+              <BrowserBreakdownCard breakdown={data.browserBreakdown} isStandard={isStandard} />
+            </div>
+          </>
+        )}
+      </main>
 
       {/* QR Code Modal */}
-      <QrCodeModal
-        isOpen={qrModalOpen}
-        onClose={() => setQrModalOpen(false)}
-        url={shortUrl}
-        shortCode={data.shortCode}
-      />
+      {data && (
+        <QrCodeModal
+          isOpen={qrModalOpen}
+          onClose={() => setQrModalOpen(false)}
+          url={shortUrl}
+          shortCode={data.shortCode}
+        />
+      )}
     </div>
   );
 }
