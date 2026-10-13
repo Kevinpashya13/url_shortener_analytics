@@ -20,11 +20,13 @@ function AppRoutes() {
 
   if (loading) return <PageSkeleton />;
 
-  const hideFooter = ['/login', '/register', '/get-started'].includes(location.pathname);
+  const isDashboardRoute = location.pathname.startsWith('/dashboard') || location.pathname.startsWith('/analytics');
+  const hideNavbar = isDashboardRoute;
+  const hideFooter = ['/login', '/register', '/get-started'].includes(location.pathname) || isDashboardRoute;
 
   return (
     <>
-      <Navbar />
+      {!hideNavbar && <Navbar />}
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/get-started" element={user ? <Navigate to="/dashboard" replace /> : <AuthGatePage />} />

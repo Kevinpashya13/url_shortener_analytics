@@ -1,0 +1,108 @@
+/* ==========================================================================
+   Sidebar.css — Standalone Fixed App Sidebar
+   Palette: Warm Cream #faeed7 / #ffefc4, Ocean Blue #086288
+========================================================================== */
+
+.app-sidebar {
+  width: 240px;
+  height: 100vh;
+  overflow-y: auto;
+  position: sticky;
+  top: 0;
+  background-color: #faeed7;
+  padding: 24px 18px;
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  border-right: 1px solid rgba(0, 0, 0, 0.05);
+  box-sizing: border-box;
+}
+
+.sidebar-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 12px 28px;
+}
+
+.sidebar-brand-icon {
+  color: #086288;
+}
+
+.sidebar-brand-title {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #086288;
+  letter-spacing: -0.02em;
+}
+
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+}
+
+.sidebar-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  background: transparent;
+  border: none;
+  border-radius: 12px;
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: #475569;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-align: left;
+  width: 100%;
+}
+
+.sidebar-nav-item:hover {
+  background-color: rgba(255, 239, 196, 0.6);
+  color: #086288;
+}
+
+.sidebar-nav-item.active {
+  background-color: #ffecd1;
+  color: #086288;
+  font-weight: 700;
+}
+
+.sidebar-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-top: 20px;
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.sidebar-home-link {
+  font-size: 0.85rem;
+  color: #64748b;
+  text-decoration: none;
+  font-weight: 600;
+  transition: color 0.15s;
+}
+.sidebar-home-link:hover {
+  color: #086288;
+}
+
+.sidebar-logout-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: none;
+  border: none;
+  color: #ef4444;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+  transition: opacity 0.15s;
+}
+.sidebar-logout-btn:hover {
+  opacity: 0.8;
+}

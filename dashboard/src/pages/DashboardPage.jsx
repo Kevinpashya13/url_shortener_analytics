@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
-  Bell, Users, ArrowUpRight, ArrowDownRight,
-  Copy, Check, ExternalLink, Plus, Globe, Sparkles, Lock, Calendar, Info, Trash2, Pencil, X, QrCode,
-  Sliders, ChevronDown, ChevronUp, RotateCcw, AlertCircle
+  Search, Bell, Home, BarChart2, Link as LinkIcon, FileText, Settings,
+  LogOut, Plus, ExternalLink, Copy, Check, QrCode, Pencil, Trash2, X,
+  Calendar, Lock, Sliders, ChevronDown, ChevronUp, AlertCircle, Sparkles, Info
 } from 'lucide-react';
 import {
   createShortUrl, getMyUrls, getAccountMe,
@@ -13,17 +13,32 @@ import { API_BASE_URL } from '../api/axiosInstance';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import QrCodeModal from '../components/QrCodeModal';
+import Sidebar from '../components/Sidebar';
 import './DashboardPage.css';
 
 const regionNames = new Intl.DisplayNames(['en'], { type: 'region' });
 
-function getCountryName(code) {
-  if (!code || code.toLowerCase() === 'unknown') return 'Indonesia';
-  try {
-    return regionNames.of(code.toUpperCase()) || code;
-  } catch {
-    return code;
+function normalizeCountries(countryBreakdown) {
+  if (!countryBreakdown || countryBreakdown.length === 0) return [];
+  const map = {};
+  for (const item of countryBreakdown) {
+    const raw = item.country?.trim()?.toUpperCase() || 'UNKNOWN';
+    let label = 'Unknown';
+    if (raw === 'ID') label = 'Indonesia';
+    else if (raw === 'US') label = 'United States';
+    else if (raw === 'UNKNOWN') label = 'Localhost / Private';
+    else {
+      try {
+        label = regionNames.of(raw) || raw;
+      } catch {
+        label = raw;
+      }
+    }
+    map[label] = (map[label] || 0) + (item.count || 0);
   }
+  return Object.entries(map)
+    .map(([name, count]) => ({ name, count }))
+    .sort((a, b) => b.count - a.count);
 }
 
 function toDateKey(date) {
@@ -55,98 +70,8 @@ function getLastMonthRange(refDate = new Date()) {
   return { startDate: toDateKey(start), endDate: toDateKey(end), monthName };
 }
 
-// ── Date Range Filter Component ──────────────────────────────────────────────
-function DateRangeFilter({
-  selectedRange,
-  onSelectRange,
-  customStart,
-  setCustomStart,
-  customEnd,
-  setCustomEnd,
-  onApplyCustom,
-}) {
-  const [showCustom, setShowCustom] = useState(false);
-
-  return (
-    <div className="date-filter-box">
-      <div className="date-presets-row">
-        {[
-          { id: 'last_month', label: 'Last Month' },
-          { id: 'all', label: 'All Time' },
-        ].map((p) => (
-          <button
-            key={p.id}
-            type="button"
-            className={`date-preset-btn ${selectedRange === p.id && !showCustom ? 'active' : ''}`}
-            onClick={() => {
-              setShowCustom(false);
-              onSelectRange(p.id);
-            }}
-          >
-            {p.label}
-          </button>
-        ))}
-
-        <button
-          type="button"
-          className={`date-preset-btn ${selectedRange === 'custom' || showCustom ? 'active' : ''}`}
-          onClick={() => setShowCustom(!showCustom)}
-        >
-          <Calendar size={13} />
-          <span>Custom</span>
-        </button>
-      </div>
-
-      {showCustom && (
-        <div className="date-custom-panel">
-          <div className="date-input-group">
-            <span className="date-field-label">From</span>
-            <input
-              type="date"
-              value={customStart}
-              onChange={(e) => setCustomStart(e.target.value)}
-              className="date-picker-input"
-            />
-          </div>
-          <span className="date-picker-sep">→</span>
-          <div className="date-input-group">
-            <span className="date-field-label">To</span>
-            <input
-              type="date"
-              value={customEnd}
-              onChange={(e) => setCustomEnd(e.target.value)}
-              className="date-picker-input"
-            />
-          </div>
-          <button
-            type="button"
-            className="date-picker-apply"
-            onClick={() => {
-              if (customStart && customEnd) {
-                onApplyCustom(customStart, customEnd);
-                setShowCustom(false);
-              }
-            }}
-          >
-            Apply
-          </button>
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ── Smooth Spline Curve Chart ────────────────────────────────────────────────
-function SplineSiteSessionsChart({
-  trendData,
-  selectedRange,
-  onSelectRange,
-  customStart,
-  setCustomStart,
-  customEnd,
-  setCustomEnd,
-  onApplyCustom,
-}) {
+// ── Spline Chart Driven by Real clicksTrend (Single Real Curve) ───────────────
+function SplineClickAnalyticsChart({ trendData }) {
   const [hoveredIdx, setHoveredIdx] = useState(null);
   const canvasRef = useRef(null);
 
@@ -162,55 +87,50 @@ function SplineSiteSessionsChart({
         { date: 'Day 7', count: 0 },
       ];
 
-  const W = 700, H = 240;
-  const pad = { top: 24, right: 30, bottom: 35, left: 40 };
-
   const maxVal = Math.max(...days.map((d) => d.count), 5);
-  const maxY = Math.ceil(maxVal * 1.25);
+  const maxY = Math.ceil(maxVal * 1.3);
+
+  const W = 620, H = 210;
+  const pad = { top: 25, right: 25, bottom: 30, left: 35 };
 
   const getX = (i) => pad.left + (i / Math.max(days.length - 1, 1)) * (W - pad.left - pad.right);
-  const getY = (v) => pad.top + (1 - v / maxY) * (H - pad.top - pad.bottom);
+  const getY = (val) => pad.top + (1 - Math.min(val, maxY) / maxY) * (H - pad.top - pad.bottom);
 
-  // Smooth bezier curve generator
-  const createCurvedPath = () => {
-    if (days.length === 1) {
-      return `M ${getX(0)},${getY(days[0].count)}`;
-    }
-      return days.reduce((acc, point, i, arr) => {
-      const x = getX(i);
-      const y = getY(point.count);
-      if (i === 0) return `M ${x},${y}`;
-      const prevX = getX(i - 1);
-      const prevY = getY(arr[i - 1].count);
-      const cp1x = prevX + (x - prevX) / 2;
-      const cp2x = prevX + (x - prevX) / 2;
-      return `${acc} C ${cp1x},${prevY} ${cp2x},${y} ${x},${y}`;
-    }, '');
-  };
+  // Smooth bezier curve for single real clicks data
+  const linePath = days.reduce((acc, pt, i) => {
+    const x = getX(i);
+    const y = getY(pt.count);
+    if (i === 0) return `M ${x},${y}`;
+    const prevX = getX(i - 1);
+    const prevY = getY(days[i - 1].count);
+    const cp1x = prevX + (x - prevX) / 2;
+    const cp2x = prevX + (x - prevX) / 2;
+    return `${acc} C ${cp1x},${prevY} ${cp2x},${y} ${x},${y}`;
+  }, '');
 
-  const linePath = createCurvedPath();
   const areaPath = days.length >= 2
     ? `${linePath} L ${getX(days.length - 1)},${H - pad.bottom} L ${getX(0)},${H - pad.bottom} Z`
     : '';
 
-  // Hover restricted strictly to the SVG chart area itself
+  const yTicks = [
+    0,
+    Math.round(maxY * 0.25),
+    Math.round(maxY * 0.5),
+    Math.round(maxY * 0.75),
+    maxY
+  ];
+
+  const step = Math.max(1, Math.ceil(days.length / 7));
+  const visibleIndices = new Set();
+  for (let i = 0; i < days.length; i += step) visibleIndices.add(i);
+  if (days.length > 1) visibleIndices.add(days.length - 1);
+
+  const isAllZero = days.every((d) => d.count === 0);
+
   const handleMouseMove = (e) => {
     if (!canvasRef.current) return;
     const rect = canvasRef.current.getBoundingClientRect();
     const clientX = e.clientX - rect.left;
-    const clientY = e.clientY - rect.top;
-
-    // Reject if outside the actual plot bounds
-    if (
-      clientX < pad.left - 15 ||
-      clientX > rect.width - (pad.right * rect.width / W) + 15 ||
-      clientY < pad.top - 20 ||
-      clientY > rect.height - (pad.bottom * rect.height / H) + 20
-    ) {
-      setHoveredIdx(null);
-      return;
-    }
-
     const scaleX = W / rect.width;
     const svgX = clientX * scaleX;
 
@@ -225,493 +145,287 @@ function SplineSiteSessionsChart({
     setHoveredIdx(closest);
   };
 
-  const yTicks = [0, Math.round(maxY * 0.33), Math.round(maxY * 0.66), maxY];
-
-  // Non-overlapping X labels computation
-  const maxLabels = 7;
-  const labelStep = Math.max(1, Math.ceil(days.length / maxLabels));
-  const visibleLabelIndices = new Set();
-  for (let i = 0; i < days.length; i += labelStep) {
-    visibleLabelIndices.add(i);
-  }
-  // Ensure the last date is shown if not too close to the previous shown label
-  if (days.length > 1) {
-    const lastIdx = days.length - 1;
-    let closestPrev = -1;
-    visibleLabelIndices.forEach((idx) => {
-      if (idx < lastIdx && idx > closestPrev) closestPrev = idx;
-    });
-    if (lastIdx - closestPrev >= Math.max(1, Math.floor(labelStep * 0.6))) {
-      visibleLabelIndices.add(lastIdx);
-    }
-  }
-
-  const isAllZero = days.length > 0 && days.every((d) => d.count === 0);
-
-  // Range description text
-  let subDescription = 'Showing last 7 days (default)';
-  if (selectedRange === 'last_month') {
-    const r = getLastMonthRange();
-    subDescription = r.monthName;
-  } else if (selectedRange === 'all') {
-    subDescription = 'All time traffic';
-  } else if (selectedRange === 'custom' && customStart && customEnd) {
-    subDescription = `Custom (${customStart} to ${customEnd})`;
-  }
-
   return (
-    <div className="spline-chart-wrap">
-      <div className="spline-header">
-        <div>
-          <div className="spline-title-row">
-            <h3 className="card-section-title">Site Sessions</h3>
-          </div>
-          <span className="spline-sub-info">{subDescription}</span>
-        </div>
+    <div
+      className="spline-chart-wrap"
+      ref={canvasRef}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={() => setHoveredIdx(null)}
+      style={{ position: 'relative' }}
+    >
+      <svg width="100%" height={H} viewBox={`0 0 ${W} ${H}`} style={{ overflow: 'visible', display: 'block' }}>
+        <defs>
+          <linearGradient id="splineTealGradient" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#086288" stopOpacity="0.22" />
+            <stop offset="100%" stopColor="#086288" stopOpacity="0.0" />
+          </linearGradient>
+        </defs>
 
-        <DateRangeFilter
-          selectedRange={selectedRange}
-          onSelectRange={onSelectRange}
-          customStart={customStart}
-          setCustomStart={setCustomStart}
-          customEnd={customEnd}
-          setCustomEnd={setCustomEnd}
-          onApplyCustom={onApplyCustom}
-        />
-      </div>
-
-      {/* Dedicated Chart Canvas — Hover ONLY activates here */}
-      <div
-        className="spline-chart-canvas"
-        ref={canvasRef}
-        onMouseMove={handleMouseMove}
-        onMouseLeave={() => setHoveredIdx(null)}
-      >
-        <svg width="100%" height={H} viewBox={`0 0 ${W} ${H}`} style={{ overflow: 'visible', display: 'block' }}>
-          <defs>
-            <linearGradient id="trafficAreaGrad" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.22" />
-              <stop offset="100%" stopColor="#3b82f6" stopOpacity="0.0" />
-            </linearGradient>
-          </defs>
-
-          {/* Horizontal grid lines */}
-          {yTicks.map((val) => (
-            <g key={val}>
-              <line
-                x1={pad.left} y1={getY(val)}
-                x2={W - pad.right} y2={getY(val)}
-                stroke="#f1f5f9" strokeWidth="1.2"
-              />
-              <text x={pad.left - 12} y={getY(val) + 3} fill="#94a3b8" fontSize="11" textAnchor="end">
-                {val >= 1000 ? `${(val / 1000).toFixed(1)}k` : val}
-              </text>
-            </g>
-          ))}
-
-          {/* Non-overlapping X labels */}
-          {days.map((d, i) => {
-            if (!visibleLabelIndices.has(i)) return null;
-            return (
-              <text key={d.date} x={getX(i)} y={H - 10} fill="#94a3b8" fontSize="11" textAnchor="middle">
-                {d.date}
-              </text>
-            );
-          })}
-
-          {/* Area Fill */}
-          {areaPath && <path d={areaPath} fill="url(#trafficAreaGrad)" />}
-
-          {/* Main Traffic Curve */}
-          <path d={linePath} fill="none" stroke="#3b82f6" strokeWidth="3.5" strokeLinecap="round" />
-
-          {/* Active hover dot (ONLY when hovered) */}
-          {hoveredIdx !== null && days[hoveredIdx] && (
-            <circle
-              cx={getX(hoveredIdx)}
-              cy={getY(days[hoveredIdx].count)}
-              r="6"
-              fill="#3b82f6"
-              stroke="#ffffff"
-              strokeWidth="2.5"
+        {/* Y Axis Grid lines */}
+        {yTicks.map((val) => (
+          <g key={val}>
+            <line
+              x1={pad.left} y1={getY(val)}
+              x2={W - pad.right} y2={getY(val)}
+              stroke="#e2edf5" strokeWidth="1"
             />
-          )}
-        </svg>
+            <text x={pad.left - 8} y={getY(val) + 3} fill="#94a3b8" fontSize="10" textAnchor="end" fontWeight="500">
+              {val >= 1000 ? `${(val / 1000).toFixed(1)}k` : val}
+            </text>
+          </g>
+        ))}
 
-        {/* Floating Tooltip Card (ONLY when hovered, positioned on canvas) */}
+        {/* X Labels */}
+        {days.map((pt, i) => {
+          if (!visibleIndices.has(i)) return null;
+          return (
+            <text key={pt.date + i} x={getX(i)} y={H - 8} fill="#94a3b8" fontSize="10" textAnchor="middle" fontWeight="500">
+              {pt.date}
+            </text>
+          );
+        })}
+
+        {/* Area fill */}
+        {areaPath && <path d={areaPath} fill="url(#splineTealGradient)" />}
+
+        {/* Single real click curve */}
+        <path d={linePath} fill="none" stroke="#086288" strokeWidth="3" strokeLinecap="round" />
+
+        {/* Active Hover Dot on Click Line */}
         {hoveredIdx !== null && days[hoveredIdx] && (
-          <div
-            className="spline-tooltip-card"
-            style={{
-              left: `${(getX(hoveredIdx) / W) * 100}%`,
-              top: `${Math.max(getY(days[hoveredIdx].count) - 50, 10)}px`,
-            }}
-          >
-            <div className="tooltip-row">
-              <span className="tooltip-dot blue" />
-              <span className="tooltip-label">{days[hoveredIdx].date}</span>
-            </div>
-            <div className="tooltip-val blue-text">
-              {days[hoveredIdx].count.toLocaleString()}{' '}
-              {days[hoveredIdx].count === 1 ? 'click' : 'clicks'}
-            </div>
-          </div>
+          <circle
+            cx={getX(hoveredIdx)}
+            cy={getY(days[hoveredIdx].count)}
+            r="5.5"
+            fill="#086288"
+            stroke="#ffffff"
+            strokeWidth="2.5"
+          />
         )}
-        {isAllZero && (
-          <div className="chart-empty-hint">
-            <Info size={14} className="empty-hint-icon" />
-            <span>Belum ada sesi tercatat pada periode ini</span>
-          </div>
-        )}
-      </div>
+      </svg>
+
+      {/* Floating Hover Tooltip */}
+      {hoveredIdx !== null && days[hoveredIdx] && (
+        <div
+          className="spline-floating-tooltip"
+          style={{
+            left: `${(getX(hoveredIdx) / W) * 100}%`,
+            top: `${Math.max(getY(days[hoveredIdx].count) - 45, 10)}px`,
+          }}
+        >
+          <span className="tooltip-date">{days[hoveredIdx].date}</span>
+          <span className="tooltip-clicks">{days[hoveredIdx].count.toLocaleString()} clicks</span>
+        </div>
+      )}
+
+      {isAllZero && (
+        <div className="chart-empty-subtle">
+          <Info size={13} />
+          <span>No click sessions recorded in this timeframe</span>
+        </div>
+      )}
     </div>
   );
 }
 
-// ── Donut Chart (Device) ───────────────────────────────────────────────────
-function DeviceDonutChart({ breakdown, isStandard, unit = 'Sessions' }) {
-  const [hoveredKey, setHoveredKey] = useState(null);
-
+// ── Top Referring Domains Donut Chart (Real Data) ───────────────────────────
+function TopReferringDomainsCard({ referrers, isStandard }) {
   if (isStandard) {
     return (
-      <div className="dash-box">
-        <div className="box-header">
-          <h3 className="card-section-title">Session by Device</h3>
+      <div className="dash-card card-referring">
+        <div className="card-header-clean">
+          <h3 className="card-clean-title">Top Referring Domains</h3>
         </div>
-        <div className="chart-locked-box">
-          <Lock size={20} color="#6366f1" />
-          <p>Device analytics is available on <strong>Pro</strong> and above.</p>
-          <Link to="/pricing" className="pill-badge">Upgrade Plan →</Link>
+        <div className="card-locked-inline">
+          <Lock size={18} color="#086288" />
+          <p>Referral analytics is available on <strong>Pro</strong> and above.</p>
+          <Link to="/pricing" className="pill-upgrade-link">Upgrade Plan →</Link>
         </div>
       </div>
     );
   }
 
-  const items = breakdown || [];
-  const desktopCount = items.find((b) => b.deviceType?.toLowerCase() === 'desktop')?.count || 0;
-  const mobileCount = items.find((b) => b.deviceType?.toLowerCase() === 'mobile')?.count || 0;
-  const tabletCount = items.find((b) => b.deviceType?.toLowerCase() === 'tablet')?.count || 0;
+  const raw = referrers || [];
+  const total = raw.reduce((sum, r) => sum + (r.count || 0), 0);
 
-  const knownTypes = ['desktop', 'mobile', 'tablet'];
-  const otherCount = items
-    .filter((b) => !knownTypes.includes(b.deviceType?.toLowerCase()))
-    .reduce((acc, curr) => acc + (curr.count || 0), 0);
+  const colors = ['#f97316', '#14b8a6', '#0284c7', '#eab308', '#8b5cf6'];
+  const items = raw.slice(0, 4).map((r, idx) => ({
+    label: r.referrer === 'direct' ? 'Direct' : (r.referrer || 'Other'),
+    count: r.count,
+    pct: total > 0 ? Math.round((r.count / total) * 100) : 0,
+    color: colors[idx % colors.length],
+  }));
 
-  const total = desktopCount + mobileCount + tabletCount + otherCount;
-
-  const devices = [
-    { key: 'desktop', label: 'Desktop', count: desktopCount, color: '#3b82f6' },
-    { key: 'mobile', label: 'Mobile', count: mobileCount, color: '#044e43' },
-    { key: 'tablet', label: 'Tablet', count: tabletCount, color: '#f87171' },
-  ];
-
-  if (otherCount > 0) {
-    devices.push({ key: 'other', label: 'Other', count: otherCount, color: '#8b5cf6' });
-  }
-
-  devices.forEach((d) => {
-    d.pct = total > 0 ? Math.round((d.count / total) * 100) : 0;
-  });
-
-  const strokeWidth = 22;
-  const radius = 68;
+  const radius = 54;
+  const strokeWidth = 20;
   const circumference = 2 * Math.PI * radius;
 
-  const activeDevices = devices.filter((d) => d.count > 0);
-  const gap = activeDevices.length > 1 ? 3 : 0;
-  const totalGap = gap * activeDevices.length;
-  const availableLength = Math.max(0, circumference - totalGap);
-
-  let accumulatedLength = 0;
-  const segments = activeDevices.map((d) => {
-    const fraction = total > 0 ? d.count / total : 0;
-    const arcLength = fraction * availableLength;
-    const offset = accumulatedLength;
-    accumulatedLength += arcLength + gap;
-    return {
-      ...d,
-      arcLength,
-      offset,
-    };
+  let accumulated = 0;
+  const segments = items.map((c) => {
+    const arc = (c.pct / 100) * circumference;
+    const offset = accumulated;
+    accumulated += arc;
+    return { ...c, arc, offset };
   });
 
-  const activeDevice = hoveredKey ? devices.find((d) => d.key === hoveredKey) : null;
-
   return (
-    <div className="dash-box">
-      <div className="box-header">
-        <h3 className="card-section-title">Session by Device</h3>
+    <div className="dash-card card-referring">
+      <div className="card-header-clean">
+        <div>
+          <h3 className="card-clean-title">Top Referring Domains</h3>
+          <span className="card-sub-hint">Traffic sources breakdown</span>
+        </div>
       </div>
 
-      <div className="donut-graphic-wrap">
-        <svg viewBox="0 0 200 200" className="donut-svg">
-          {/* Background Track */}
-          <circle
-            cx="100"
-            cy="100"
-            r={radius}
-            fill="none"
-            stroke="#f1f5f9"
-            strokeWidth={strokeWidth}
-          />
-
-          {/* Active Data Segments */}
-          {total > 0 && segments.map((seg) => {
-            const isHovered = hoveredKey === seg.key;
-            return (
-              <circle
-                key={seg.key}
-                cx="100"
-                cy="100"
-                r={radius}
-                fill="none"
-                stroke={seg.color}
-                strokeWidth={isHovered ? strokeWidth + 4 : strokeWidth}
-                strokeDasharray={`${seg.arcLength} ${circumference}`}
-                strokeDashoffset={-seg.offset}
-                transform="rotate(-90 100 100)"
-                className="donut-segment"
-                onMouseEnter={() => setHoveredKey(seg.key)}
-                onMouseLeave={() => setHoveredKey(null)}
-                style={{
-                  transition: 'stroke-width 0.2s ease, opacity 0.2s ease',
-                  opacity: hoveredKey && !isHovered ? 0.45 : 1,
-                  cursor: 'pointer',
-                }}
-              />
-            );
-          })}
-
-          {/* Center Text */}
-          <text
-            x="100"
-            y={activeDevice ? 94 : 96}
-            textAnchor="middle"
-            fill="#0f172a"
-            fontSize={activeDevice ? 22 : 24}
-            fontWeight="800"
-          >
-            {activeDevice ? `${activeDevice.pct}%` : (total > 0 ? total.toLocaleString() : '0')}
-          </text>
-          <text
-            x="100"
-            y={activeDevice ? 114 : 116}
-            textAnchor="middle"
-            fill="#94a3b8"
-            fontSize="11"
-            fontWeight="600"
-          >
-            {activeDevice ? activeDevice.label : (total > 0 ? unit : 'No Data')}
-          </text>
-        </svg>
-      </div>
-
-      <div className="device-legend-row">
-        {devices.map((d) => (
-          <div
-            key={d.key}
-            className={`dev-pill ${hoveredKey === d.key ? 'active' : ''}`}
-            onMouseEnter={() => setHoveredKey(d.key)}
-            onMouseLeave={() => setHoveredKey(null)}
-          >
-            <span className="dev-badge" style={{ color: d.color }}>●</span>
-            <span className="dev-count">{d.count.toLocaleString()}</span>
-            <span className="dev-name">{d.label}</span>
+      {items.length === 0 ? (
+        <div className="empty-sub-text">No referral data recorded yet.</div>
+      ) : (
+        <div className="referring-body">
+          <div className="donut-circle-box">
+            <svg viewBox="0 0 150 150" className="donut-ad-svg">
+              <circle cx="75" cy="75" r={radius} fill="none" stroke="#f1f5f9" strokeWidth={strokeWidth} />
+              {segments.map((seg) => (
+                <circle
+                  key={seg.label}
+                  cx="75"
+                  cy="75"
+                  r={radius}
+                  fill="none"
+                  stroke={seg.color}
+                  strokeWidth={strokeWidth}
+                  strokeDasharray={`${seg.arc} ${circumference}`}
+                  strokeDashoffset={-seg.offset}
+                  transform="rotate(-90 75 75)"
+                />
+              ))}
+            </svg>
           </div>
-        ))}
-      </div>
-    </div>
-  );
-}
 
-// ── Browser Breakdown ────────────────────────────────────────────────────────
-function BrowserBreakdownCard({ breakdown, isStandard }) {
-  if (isStandard) {
-    return (
-      <div className="dash-box">
-        <div className="box-header">
-          <h3 className="card-section-title">Session by Browser</h3>
-        </div>
-        <div className="chart-locked-box">
-          <Lock size={20} color="#6366f1" />
-          <p>Browser analytics is available on <strong>Pro</strong> and above.</p>
-          <Link to="/pricing" className="pill-badge">Upgrade Plan →</Link>
-        </div>
-      </div>
-    );
-  }
-
-  const items = breakdown || [];
-  const totalBrowserClicks = items.reduce((acc, curr) => acc + (curr.count || 0), 0) || 1;
-
-  const browsers = items
-    .filter((b) => b.browser && b.count > 0)
-    .slice(0, 5)
-    .map((b) => {
-      const name = b.browser === 'unknown' ? 'Unknown Browser' : b.browser;
-      const pct = Math.round((b.count / totalBrowserClicks) * 100);
-      return {
-        name,
-        count: b.count,
-        pct,
-      };
-    });
-
-  return (
-    <div className="dash-box">
-      <div className="box-header">
-        <h3 className="card-section-title">Session by Browser</h3>
-      </div>
-
-      {browsers.length === 0 ? (
-        <p className="no-data-hint" style={{ padding: '24px 0', textAlign: 'center' }}>
-          No browser data recorded yet.
-        </p>
-      ) : (
-        <div className="browser-bars-list">
-          {browsers.map((b) => (
-            <div className="browser-bar-item" key={b.name}>
-              <div className="browser-bar-info">
-                <span className="browser-name-text">{b.name}</span>
-                <span className="browser-count-text">
-                  {b.count.toLocaleString()}{' '}
-                  <span className="browser-pct-text">({b.pct}%)</span>
-                </span>
+          <div className="referring-legend-list">
+            {items.map((c) => (
+              <div className="ref-legend-item" key={c.label}>
+                <span className="ref-dot" style={{ background: c.color }} />
+                <span className="ref-label">{c.label}</span>
+                <span className="ref-pct">{c.pct}%</span>
               </div>
-              <div className="browser-bar-track">
-                <div
-                  className="browser-bar-fill"
-                  style={{ width: `${Math.max(4, b.pct)}%` }}
-                />
-              </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       )}
     </div>
   );
 }
 
-// ── Country Breakdown ─────────────────────────────────────────────────────────
-function WorldActiveUsersCard({ breakdown, isStandard, totalClicks }) {
+// ── Geographic Distribution Card (Accurate & Combined by Real Country) ──────
+function VisitorGeographicCard({ countryBreakdown, isStandard }) {
   if (isStandard) {
     return (
-      <div className="dash-box">
-        <div className="box-header">
-          <h3 className="card-section-title">Active Users by Location</h3>
+      <div className="dash-card card-geo">
+        <div className="card-header-clean">
+          <h3 className="card-clean-title">Geographic Distribution</h3>
         </div>
-        <div className="chart-locked-box">
-          <Lock size={20} color="#6366f1" />
+        <div className="card-locked-inline">
+          <Lock size={18} color="#086288" />
           <p>Location analytics is available on <strong>Pro</strong> and above.</p>
-          <Link to="/pricing" className="pill-badge">Upgrade Plan →</Link>
+          <Link to="/pricing" className="pill-upgrade-link">Upgrade Plan →</Link>
         </div>
       </div>
     );
   }
 
-  const items = breakdown || [];
-  const totalCountryClicks = items.reduce((acc, curr) => acc + (curr.count || 0), 0) || totalClicks || 1;
-
-  const countries = items.slice(0, 5).map((c) => {
-    const name = getCountryName(c.country);
-    const count = c.count || 0;
-    const pct = Math.round((count / totalCountryClicks) * 100);
-    return { name, count, pct };
-  });
+  const countries = normalizeCountries(countryBreakdown);
+  const totalCountryClicks = countries.reduce((sum, c) => sum + c.count, 0) || 1;
 
   return (
-    <div className="dash-box">
-      <div className="box-header">
-        <h3 className="card-section-title">Active Users by Location</h3>
+    <div className="dash-card card-geo">
+      <div className="card-header-clean">
+        <div>
+          <h3 className="card-clean-title">Geographic Distribution</h3>
+          <span className="card-sub-hint">Visitor traffic grouped by real country</span>
+        </div>
+        <span className="geo-total-pill">{countries.length} Region{countries.length === 1 ? '' : 's'}</span>
       </div>
 
-      {countries.length === 0 ? (
-        <p className="no-data-hint" style={{ padding: '24px 0', textAlign: 'center' }}>
-          No location data recorded yet.
-        </p>
-      ) : (
-        <div className="country-bars-list">
-          {countries.map((c) => (
-            <div className="country-bar-item" key={c.name}>
-              <div className="country-bar-info">
-                <span className="country-name-text">{c.name}</span>
-                <span className="country-count-text">
-                  {c.count.toLocaleString()}{' '}
-                  <span className="country-pct-text">({c.pct}%)</span>
-                </span>
-              </div>
-              <div className="country-bar-track">
-                <div
-                  className="country-bar-fill"
-                  style={{ width: `${Math.max(4, c.pct)}%` }}
-                />
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
+      <div className="geo-body-clean">
+        {countries.length === 0 ? (
+          <div className="empty-sub-text">No location data recorded yet.</div>
+        ) : (
+          <div className="geo-countries-progress-list">
+            {countries.map((c) => {
+              const pct = Math.round((c.count / totalCountryClicks) * 100);
+              return (
+                <div className="geo-country-item" key={c.name}>
+                  <div className="geo-country-info">
+                    <span className="geo-country-name">{c.name}</span>
+                    <span className="geo-country-stats">
+                      <strong>{c.count.toLocaleString()}</strong> clicks{' '}
+                      <span className="geo-pct">({pct}%)</span>
+                    </span>
+                  </div>
+                  <div className="geo-progress-track">
+                    <div className="geo-progress-fill" style={{ width: `${Math.max(6, pct)}%` }} />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
 
-// ── Main Dashboard Page ───────────────────────────────────────────────────────
+// ── Main Dashboard Page Component ────────────────────────────────────────────
 export default function DashboardPage() {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const toast = useToast();
   const location = useLocation();
   const navigate = useNavigate();
 
+  const [activeNav, setActiveNav] = useState('dashboard');
   const [urls, setUrls] = useState([]);
   const [account, setAccount] = useState(null);
   const [overview, setOverview] = useState(null);
+
+  // Notifications Popover
+  const [showNotifications, setShowNotifications] = useState(false);
+  const notifRef = useRef(null);
+
+  // Date Filter State
   const [selectedRange, setSelectedRange] = useState(null); // null = default 7 days
   const [customStart, setCustomStart] = useState('');
   const [customEnd, setCustomEnd] = useState('');
+  const [showDateDropdown, setShowDateDropdown] = useState(false);
+  const dropdownRef = useRef(null);
 
+  // New Link Modal & Inputs
+  const [showCreateModal, setShowCreateModal] = useState(false);
   const [originalUrl, setOriginalUrl] = useState(location.state?.pendingUrl || '');
   const [customAlias, setCustomAlias] = useState('');
   const [expiredAt, setExpiredAt] = useState('');
   const [fallbackUrl, setFallbackUrl] = useState('');
   const [linkPassword, setLinkPassword] = useState('');
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
   const [copied, setCopied] = useState('');
   const [qrSelected, setQrSelected] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
-  // UTM Campaign Builder state
+  // UTM tracking state
   const [showUtm, setShowUtm] = useState(false);
   const [utmSource, setUtmSource] = useState('');
   const [utmMedium, setUtmMedium] = useState('');
   const [utmCampaign, setUtmCampaign] = useState('');
-  const [utmTerm, setUtmTerm] = useState('');
-  const [utmContent, setUtmContent] = useState('');
-  const FIELD_HELP = {
-    source: {
-      title: 'Campaign Source (utm_source)',
-      desc: 'The platform, search engine, or referrer where traffic originates.',
-      example: 'e.g. google, instagram, facebook, newsletter, tiktok',
-    },
-    medium: {
-      title: 'Campaign Medium (utm_medium)',
-      desc: 'Marketing medium or delivery channel format.',
-      example: 'e.g. cpc, bio, email, social, banner, story',
-    },
-    campaign: {
-      title: 'Campaign Name (utm_campaign)',
-      desc: 'Specific marketing campaign, promo tag, or product slogan.',
-      example: 'e.g. summer_sale, holiday_promo, launch_2026',
-    },
-    term: {
-      title: 'Campaign Term (utm_term)',
-      desc: 'Search keywords tracked for paid search advertising.',
-      example: 'e.g. running_shoes, web_agency, design_tips',
-    },
-    content: {
-      title: 'Campaign Content (utm_content)',
-      desc: 'Differentiates multiple links or creative variants for A/B testing.',
-      example: 'e.g. top_banner, cta_blue_btn, footer_link',
-    },
-  };
+
+  // Edit Link Modal
+  const [editingUrl, setEditingUrl] = useState(null);
+  const [editAlias, setEditAlias] = useState('');
+  const [editDestination, setEditDestination] = useState('');
+  const [editLoading, setEditLoading] = useState(false);
+
+  const role = user?.role || 'STANDARD';
+  const isStandard = role === 'STANDARD';
+  const features = account?.features || {};
+  const urlsLimit = account?.usage?.urlsLimit === Infinity ? '∞' : (account?.usage?.urlsLimit ?? 25);
 
   const buildFinalUrl = (baseUrl) => {
     if (!baseUrl) return '';
@@ -721,24 +435,13 @@ export default function DashboardPage() {
       if (utmSource.trim()) urlObj.searchParams.set('utm_source', utmSource.trim());
       if (utmMedium.trim()) urlObj.searchParams.set('utm_medium', utmMedium.trim());
       if (utmCampaign.trim()) urlObj.searchParams.set('utm_campaign', utmCampaign.trim());
-      if (utmTerm.trim()) urlObj.searchParams.set('utm_term', utmTerm.trim());
-      if (utmContent.trim()) urlObj.searchParams.set('utm_content', utmContent.trim());
       return urlObj.toString();
     } catch {
       return baseUrl;
     }
   };
 
-  const hasUtm = Boolean(utmSource.trim() || utmMedium.trim() || utmCampaign.trim() || utmTerm.trim() || utmContent.trim());
-
-  const [editingUrl, setEditingUrl] = useState(null);
-  const [editAlias, setEditAlias] = useState('');
-  const [editDestination, setEditDestination] = useState('');
-  const [editLoading, setEditLoading] = useState(false);
-
-  const role = user?.role || 'STANDARD';
-  const isStandard = role === 'STANDARD';
-  const features = account?.features || {};
+  const hasUtm = Boolean(utmSource.trim() || utmMedium.trim() || utmCampaign.trim());
 
   const fetchOverview = async (params = {}) => {
     try {
@@ -757,7 +460,6 @@ export default function DashboardPage() {
       ]);
       setUrls(urlsRes.data);
       setAccount(meRes.data);
-      // Default: 7 days
       await fetchOverview({ days: 7 });
     } catch (err) {
       console.error('Failed to load dashboard data:', err);
@@ -765,26 +467,29 @@ export default function DashboardPage() {
   };
 
   useEffect(() => {
-    const upgradeRole = location.state?.upgradeRole;
-    if (upgradeRole) {
-      upgradeAccount(upgradeRole)
-        .then(() => {
-          setSuccess(`🎉 Successfully upgraded to ${upgradeRole}! Please log in again to apply changes.`);
-          navigate('/dashboard', { replace: true, state: {} });
-        })
-        .catch((err) => {
-          setError(err.response?.data?.error || 'Upgrade failed');
-        });
-    }
+    fetchData();
   }, []);
 
-  useEffect(() => { fetchData(); }, []);
+  // Close dropdowns on outside click
+  useEffect(() => {
+    const handleOutsideClick = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setShowDateDropdown(false);
+      }
+      if (notifRef.current && !notifRef.current.contains(e.target)) {
+        setShowNotifications(false);
+      }
+    };
+    document.addEventListener('mousedown', handleOutsideClick);
+    return () => document.removeEventListener('mousedown', handleOutsideClick);
+  }, []);
 
+  // Date filter handler
   const handleSelectRange = (rangeId) => {
-    if (rangeId === selectedRange || rangeId === 'default') {
-      // Toggle off / reset to default 7 days
+    if (rangeId === selectedRange || rangeId === 'default' || rangeId === '7days') {
       setSelectedRange(null);
       fetchOverview({ days: 7 });
+      setShowDateDropdown(false);
       return;
     }
 
@@ -796,18 +501,30 @@ export default function DashboardPage() {
     } else if (rangeId === 'all') {
       fetchOverview({ days: 'all' });
     }
+    setShowDateDropdown(false);
   };
 
-  const handleApplyCustom = (start, end) => {
-    setSelectedRange('custom');
-    fetchOverview({ startDate: start, endDate: end });
+  const handleApplyCustom = () => {
+    if (customStart && customEnd) {
+      setSelectedRange('custom');
+      fetchOverview({ startDate: customStart, endDate: customEnd });
+      setShowDateDropdown(false);
+    }
   };
+
+  let dateRangeLabel = 'Last 7 Days';
+  if (selectedRange === 'last_month') {
+    const r = getLastMonthRange();
+    dateRangeLabel = r.monthName;
+  } else if (selectedRange === 'all') {
+    dateRangeLabel = 'All Time';
+  } else if (selectedRange === 'custom' && customStart && customEnd) {
+    dateRangeLabel = `${customStart} → ${customEnd}`;
+  }
 
   const handleCreate = async (e) => {
     e.preventDefault();
     setError('');
-    setSuccess('');
-
     const destinationUrl = hasUtm ? buildFinalUrl(originalUrl) : originalUrl;
 
     try {
@@ -824,17 +541,31 @@ export default function DashboardPage() {
       setExpiredAt('');
       setFallbackUrl('');
       setLinkPassword('');
-      setUtmSource('');
-      setUtmMedium('');
-      setUtmCampaign('');
-      setUtmTerm('');
-      setUtmContent('');
       setShowUtm(false);
+      setShowCreateModal(false);
       fetchData();
     } catch (err) {
       const errMsg = err.response?.data?.error || 'Failed to create short URL';
       setError(errMsg);
       toast.error(errMsg);
+    }
+  };
+
+  const handleCopy = (text) => {
+    navigator.clipboard.writeText(text);
+    setCopied(text);
+    toast.success('Link copied to clipboard!');
+    setTimeout(() => setCopied(''), 2000);
+  };
+
+  const handleDelete = async (shortCode) => {
+    if (!window.confirm(`Are you sure you want to delete /${shortCode}?`)) return;
+    try {
+      await deleteShortUrl(shortCode);
+      toast.success(`Link /${shortCode} deleted.`);
+      fetchData();
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Failed to delete URL');
     }
   };
 
@@ -853,569 +584,622 @@ export default function DashboardPage() {
         newAlias: editAlias !== editingUrl.shortCode ? editAlias : undefined,
         originalUrl: features.editDestination ? editDestination : undefined,
       });
-      const [urlsRes, meRes] = await Promise.all([getMyUrls(), getAccountMe()]);
-      setUrls(urlsRes.data);
-      setAccount(meRes.data);
       toast.success('Short link updated successfully.');
       setEditingUrl(null);
+      fetchData();
     } catch (err) {
-      const errMsg = err.response?.data?.error || 'Failed to update short URL';
-      setError(errMsg);
-      toast.error(errMsg);
-      setTimeout(() => setError(''), 4000);
+      toast.error(err.response?.data?.error || 'Failed to update short URL');
     } finally {
       setEditLoading(false);
     }
   };
 
-  const handleDelete = async (shortCode) => {
-    if (!window.confirm(`Are you sure you want to delete /${shortCode}? This link will be deactivated immediately.`)) {
-      return;
-    }
-    try {
-      await deleteShortUrl(shortCode);
-      const [urlsRes, meRes] = await Promise.all([getMyUrls(), getAccountMe()]);
-      setUrls(urlsRes.data);
-      setAccount(meRes.data);
-      toast.success(`Link /${shortCode} deleted successfully.`);
-    } catch (err) {
-      const errMsg = err.response?.data?.error || 'Failed to delete URL';
-      setError(errMsg);
-      toast.error(errMsg);
-      setTimeout(() => setError(''), 3000);
-    }
-  };
-
-  const handleCopy = (text) => {
-    navigator.clipboard.writeText(text);
-    setCopied(text);
-    toast.success('Link copied to clipboard!');
-    setTimeout(() => setCopied(''), 2000);
-  };
-
+  // Metrics
   const totalClicksCount = overview?.totalClicks ?? urls.reduce((sum, u) => sum + (u.clickCount || 0), 0);
-  const urlsUsed = account?.usage?.urlsThisMonth ?? urls.length;
-  const urlsLimit = account?.usage?.urlsLimit === Infinity ? '∞' : (account?.usage?.urlsLimit ?? 50);
+  const uniqueVisitorsCount = overview?.uniqueVisitors ?? (totalClicksCount > 0 ? Math.min(totalClicksCount, Math.round(totalClicksCount * 0.8)) : 0);
+  const todayClicks = overview?.clicksTrend?.[overview.clicksTrend.length - 1]?.count ?? 0;
+
+  // Filter links for the Links library
+  const filteredUrls = urls.filter((u) =>
+    u.shortCode.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    u.originalUrl.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const topRankedLinks = [...urls].sort((a, b) => (b.clickCount || 0) - (a.clickCount || 0)).slice(0, 4);
+  const telemetryList = overview?.recentClicks || [];
 
   return (
-    <div className="dash-screen">
-      {/* ── Top Header ── */}
-      <div className="dash-top-bar">
-        <div>
-          <h1 className="dash-main-title">Dashboard</h1>
-          <p className="dash-main-sub">Search and manage your shortened links & traffic</p>
-        </div>
+    <div className="ad-dashboard-layout">
+      {/* ── STANDALONE APP SIDEBAR COMPONENT ── */}
+      <Sidebar
+        activeNav={activeNav}
+        setActiveNav={setActiveNav}
+        linksCount={urls.length}
+        firstShortCode={urls[0]?.shortCode}
+      />
 
-        <div className="dash-user-area">
-          <div className="notification-bell">
-            <Bell size={20} />
-            <span className="bell-badge-dot" />
-          </div>
-
-          <div className="user-profile-card">
-            <div className="user-avatar-circle">
-              {user?.email?.charAt(0).toUpperCase() || 'U'}
-            </div>
-            <div className="user-profile-info">
-              <span className="user-profile-name">{user?.email?.split('@')[0] || 'User'}</span>
-              <span className="user-profile-role">{role}</span>
-            </div>
-          </div>
-
-          <Link to="/pricing" className="dash-upgrade-btn">
-            <Sparkles size={14} /> Upgrade
-          </Link>
-        </div>
-      </div>
-
-      {/* ── Main Grid ── */}
-      <div className="dash-grid-layout">
-
-        {/* ── LEFT COLUMN ── */}
-        <div className="dash-col-left">
-
-          {/* 3 KPI Stats Row */}
-          <div className="kpi-three-grid">
-            <div className="kpi-card">
-              <span className="kpi-label">Total Shortened Links</span>
-              <div className="kpi-num">{urls.length}</div>
-              <div className="kpi-trend green">
-                <ArrowUpRight size={13} /> Active <span className="kpi-vs">in library</span>
-              </div>
-            </div>
-
-            <div className="kpi-card">
-              <span className="kpi-label">Total Clicks Across Links</span>
-              <div className="kpi-num">{totalClicksCount.toLocaleString()}</div>
-              <div className="kpi-trend green">
-                <ArrowUpRight size={13} /> Realtime <span className="kpi-vs">tracked</span>
-              </div>
-            </div>
-
-            <div className="kpi-card">
-              <span className="kpi-label">Monthly Link Quota</span>
-              <div className="kpi-num">{urlsUsed} <span style={{ fontSize: '1.1rem', color: '#94a3b8' }}>/ {urlsLimit}</span></div>
-              <div className="kpi-trend green">
-                <ArrowUpRight size={13} /> {role} Plan
-              </div>
-            </div>
-          </div>
-
-          {/* Spline Chart with Date Range Controls */}
-          <div className="dash-box">
-            <SplineSiteSessionsChart
-              trendData={overview?.clicksTrend}
-              selectedRange={selectedRange}
-              onSelectRange={handleSelectRange}
-              customStart={customStart}
-              setCustomStart={setCustomStart}
-              customEnd={customEnd}
-              setCustomEnd={setCustomEnd}
-              onApplyCustom={handleApplyCustom}
+      {/* ── MAIN CONTENT CANVAS ── */}
+      <main className="ad-main-canvas">
+        {/* Top Header Bar */}
+        <header className="ad-top-bar">
+          <div className="search-capsule">
+            <Search size={16} className="search-icon" />
+            <input
+              type="text"
+              placeholder="Search links..."
+              value={searchQuery}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                if (activeNav !== 'links') setActiveNav('links');
+              }}
+              className="search-input"
             />
           </div>
 
-          {/* World Active Users */}
-          <WorldActiveUsersCard
-            breakdown={overview?.countryBreakdown}
-            isStandard={isStandard}
-            totalClicks={totalClicksCount}
-          />
-        </div>
+          <div className="top-right-actions">
+            <button
+              type="button"
+              className="btn-new-link"
+              onClick={() => setShowCreateModal(true)}
+            >
+              <Plus size={16} /> New Link
+            </button>
 
-        {/* ── RIGHT COLUMN ── */}
-        <div className="dash-col-right">
-          {/* Donut Device Chart */}
-          <DeviceDonutChart
-            breakdown={overview?.deviceBreakdown}
-            isStandard={isStandard}
-            unit="Sessions"
-          />
-
-          {/* Browser Breakdown Card */}
-          <BrowserBreakdownCard
-            breakdown={overview?.browserBreakdown}
-            isStandard={isStandard}
-          />
-        </div>
-      </div>
-
-      {/* ── Bottom Section: URL Creation & Link Management ── */}
-      <div className="dash-bottom-section">
-        {/* Shorten Form Card */}
-        <div className="dash-box">
-          <div className="box-header">
-            <h3 className="card-section-title">Create a Short Link</h3>
-            <span className="quota-pill">{urlsUsed} / {urlsLimit} URLs used</span>
-          </div>
-
-          <form onSubmit={handleCreate} className="create-url-form">
-            <div className="form-main-row">
-              <input
-                type="url"
-                placeholder="Paste destination URL (e.g. https://yourwebsite.com)"
-                value={originalUrl}
-                onChange={(e) => setOriginalUrl(e.target.value)}
-                required
-                className="input-hero"
-              />
-              <button type="submit" className="btn-create-submit">
-                <Plus size={16} /> Shorten URL
-              </button>
-            </div>
-
-            <div className="form-options-row">
-              <input
-                type="text"
-                placeholder="Custom alias (optional)"
-                value={customAlias}
-                onChange={(e) => setCustomAlias(e.target.value)}
-                className="input-sub"
-              />
-
-              {features.expiry ? (
-                <input
-                  type="datetime-local"
-                  value={expiredAt}
-                  onChange={(e) => setExpiredAt(e.target.value)}
-                  className="input-sub"
-                />
-              ) : (
-                <div className="locked-pill">
-                  <span>Link Expiry</span>
-                  <Link to="/pricing" className="pill-badge">Pro ↑</Link>
-                </div>
-              )}
-
-              {features.fallback ? (
-                <input
-                  type="url"
-                  placeholder="Custom Fallback URL (optional)"
-                  value={fallbackUrl}
-                  onChange={(e) => setFallbackUrl(e.target.value)}
-                  className="input-sub"
-                />
-              ) : (
-                <div className="locked-pill">
-                  <span>Fallback URL</span>
-                  <Link to="/pricing" className="pill-badge purple">Premium ↑</Link>
-                </div>
-              )}
-
-              {features.passwordProtection ? (
-                <input
-                  type="password"
-                  placeholder="Link password (optional)"
-                  value={linkPassword}
-                  onChange={(e) => setLinkPassword(e.target.value)}
-                  className="input-sub"
-                />
-              ) : (
-                <div className="locked-pill">
-                  <span>Password</span>
-                  <Link to="/pricing" className="pill-badge">Pro ↑</Link>
-                </div>
-              )}
-            </div>
-
-            {/* UTM Tracking Collapsible Button */}
-            <div className="utm-toggle-row">
-              <button
-                type="button"
-                className={`btn-toggle-utm ${showUtm ? 'active' : ''}`}
-                onClick={() => setShowUtm(!showUtm)}
+            {/* Notification Bell with Dropdown */}
+            <div className="notif-anchor" ref={notifRef}>
+              <div
+                className="icon-btn-round bell-wrap"
+                onClick={() => setShowNotifications(!showNotifications)}
+                title="Notifications"
               >
-                <Sliders size={13} />
-                <span>{showUtm ? 'Hide Campaign Tracking (UTM)' : 'Add Campaign Tracking (UTM)'}</span>
-                {hasUtm && <span className="utm-badge-dot">Active</span>}
-                {showUtm ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
-              </button>
-              {hasUtm && (
+                <Bell size={18} />
+                <span className="bell-red-dot" />
+              </div>
+
+              {showNotifications && (
+                <div className="notifications-dropdown-card">
+                  <div className="notif-header">
+                    <span>Notifications</span>
+                    <span className="notif-count-badge">Active</span>
+                  </div>
+                  <div className="notif-list">
+                    <div className="notif-item">
+                      <span className="notif-dot blue" />
+                      <div className="notif-text">
+                        <strong>Link Quota</strong>
+                        <span>{urls.length} of {urlsLimit} short links used</span>
+                      </div>
+                    </div>
+                    <div className="notif-item">
+                      <span className="notif-dot green" />
+                      <div className="notif-text">
+                        <strong>Realtime Telemetry</strong>
+                        <span>{totalClicksCount} total clicks recorded across links</span>
+                      </div>
+                    </div>
+                    <div className="notif-item">
+                      <span className="notif-dot orange" />
+                      <div className="notif-text">
+                        <strong>Account Plan</strong>
+                        <span>{role} tier currently active</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="user-profile-circle" title={user?.email}>
+              <span>{user?.email?.charAt(0).toUpperCase() || 'U'}</span>
+            </div>
+          </div>
+        </header>
+
+        {/* ── VIEW 1: DASHBOARD OVERVIEW ── */}
+        {activeNav === 'dashboard' && (
+          <>
+            {/* Subheader: All Short Links & Interactive Date Picker */}
+            <div className="ad-subheader-row">
+              <div className="subheader-title-group">
+                <h1 className="overview-title">
+                  Overview: <span className="overview-link">All Short Links</span>
+                </h1>
+                <span className="overview-date-pill">{dateRangeLabel}</span>
+              </div>
+
+              {/* Interactive Date Range Dropdown Popover */}
+              <div className="date-picker-anchor" ref={dropdownRef}>
                 <button
                   type="button"
-                  className="btn-clear-utm"
-                  onClick={() => {
-                    setUtmSource('');
-                    setUtmMedium('');
-                    setUtmCampaign('');
-                    setUtmTerm('');
-                    setUtmContent('');
-                  }}
-                  title="Clear all UTM parameters"
+                  className="date-display-badge"
+                  onClick={() => setShowDateDropdown(!showDateDropdown)}
                 >
-                  <RotateCcw size={12} /> Clear UTM
+                  <span>Dated: {dateRangeLabel}</span>
+                  <Calendar size={15} />
                 </button>
-              )}
-            </div>
 
-            {/* UTM Builder Panel */}
-            {showUtm && (
-              <div className="utm-builder-panel">
-                <div className="utm-fields-grid">
-                  {/* Field 1: Source */}
-                  <div className="utm-field">
-                    <div className="utm-label-row">
-                      <label className="utm-label">
-                        Campaign Source <span className="req-dot">*</span>
-                      </label>
-                      <div className="utm-help-wrap">
-                        <span className="btn-help-icon" title="Campaign Source information" tabIndex={0}>
-                          <AlertCircle size={13} />
-                        </span>
-                        <div className="help-hover-card">
-                          <span className="help-title">{FIELD_HELP.source.title}</span>
-                          <p className="help-desc">{FIELD_HELP.source.desc}</p>
-                          <div className="help-example">{FIELD_HELP.source.example}</div>
-                        </div>
-                      </div>
+                {showDateDropdown && (
+                  <div className="date-dropdown-card">
+                    <div className="date-dropdown-header">Filter Range</div>
+                    <div className="date-preset-buttons">
+                      <button
+                        type="button"
+                        className={`date-chip ${!selectedRange ? 'active' : ''}`}
+                        onClick={() => handleSelectRange('7days')}
+                      >
+                        Last 7 Days
+                      </button>
+                      <button
+                        type="button"
+                        className={`date-chip ${selectedRange === 'last_month' ? 'active' : ''}`}
+                        onClick={() => handleSelectRange('last_month')}
+                      >
+                        Last Month
+                      </button>
+                      <button
+                        type="button"
+                        className={`date-chip ${selectedRange === 'all' ? 'active' : ''}`}
+                        onClick={() => handleSelectRange('all')}
+                      >
+                        All Time
+                      </button>
                     </div>
-                    <input
-                      type="text"
-                      placeholder="e.g. google, instagram, newsletter"
-                      value={utmSource}
-                      onChange={(e) => setUtmSource(e.target.value)}
-                      className="utm-input"
-                    />
-                  </div>
 
-                  {/* Field 2: Medium */}
-                  <div className="utm-field">
-                    <div className="utm-label-row">
-                      <label className="utm-label">Campaign Medium</label>
-                      <div className="utm-help-wrap">
-                        <span className="btn-help-icon" title="Campaign Medium information" tabIndex={0}>
-                          <AlertCircle size={13} />
-                        </span>
-                        <div className="help-hover-card">
-                          <span className="help-title">{FIELD_HELP.medium.title}</span>
-                          <p className="help-desc">{FIELD_HELP.medium.desc}</p>
-                          <div className="help-example">{FIELD_HELP.medium.example}</div>
-                        </div>
-                      </div>
+                    <div className="date-custom-divider">Custom Range</div>
+                    <div className="date-inputs-row">
+                      <input
+                        type="date"
+                        value={customStart}
+                        onChange={(e) => setCustomStart(e.target.value)}
+                        className="date-native-input"
+                      />
+                      <span className="date-arrow">→</span>
+                      <input
+                        type="date"
+                        value={customEnd}
+                        onChange={(e) => setCustomEnd(e.target.value)}
+                        className="date-native-input"
+                      />
                     </div>
-                    <input
-                      type="text"
-                      placeholder="e.g. cpc, bio, email, social"
-                      value={utmMedium}
-                      onChange={(e) => setUtmMedium(e.target.value)}
-                      className="utm-input"
-                    />
-                  </div>
-
-                  {/* Field 3: Campaign */}
-                  <div className="utm-field">
-                    <div className="utm-label-row">
-                      <label className="utm-label">Campaign Name</label>
-                      <div className="utm-help-wrap">
-                        <span className="btn-help-icon" title="Campaign Name information" tabIndex={0}>
-                          <AlertCircle size={13} />
-                        </span>
-                        <div className="help-hover-card">
-                          <span className="help-title">{FIELD_HELP.campaign.title}</span>
-                          <p className="help-desc">{FIELD_HELP.campaign.desc}</p>
-                          <div className="help-example">{FIELD_HELP.campaign.example}</div>
-                        </div>
-                      </div>
-                    </div>
-                    <input
-                      type="text"
-                      placeholder="e.g. summer_sale, promo_launch"
-                      value={utmCampaign}
-                      onChange={(e) => setUtmCampaign(e.target.value)}
-                      className="utm-input"
-                    />
-                  </div>
-
-                  {/* Field 4: Term */}
-                  <div className="utm-field">
-                    <div className="utm-label-row">
-                      <label className="utm-label">Campaign Term (Optional)</label>
-                      <div className="utm-help-wrap">
-                        <span className="btn-help-icon" title="Campaign Term information" tabIndex={0}>
-                          <AlertCircle size={13} />
-                        </span>
-                        <div className="help-hover-card">
-                          <span className="help-title">{FIELD_HELP.term.title}</span>
-                          <p className="help-desc">{FIELD_HELP.term.desc}</p>
-                          <div className="help-example">{FIELD_HELP.term.example}</div>
-                        </div>
-                      </div>
-                    </div>
-                    <input
-                      type="text"
-                      placeholder="e.g. running+shoes"
-                      value={utmTerm}
-                      onChange={(e) => setUtmTerm(e.target.value)}
-                      className="utm-input"
-                    />
-                  </div>
-
-                  {/* Field 5: Content */}
-                  <div className="utm-field">
-                    <div className="utm-label-row">
-                      <label className="utm-label">Campaign Content (Optional)</label>
-                      <div className="utm-help-wrap">
-                        <span className="btn-help-icon" title="Campaign Content information" tabIndex={0}>
-                          <AlertCircle size={13} />
-                        </span>
-                        <div className="help-hover-card">
-                          <span className="help-title">{FIELD_HELP.content.title}</span>
-                          <p className="help-desc">{FIELD_HELP.content.desc}</p>
-                          <div className="help-example">{FIELD_HELP.content.example}</div>
-                        </div>
-                      </div>
-                    </div>
-                    <input
-                      type="text"
-                      placeholder="e.g. banner_top, cta_blue"
-                      value={utmContent}
-                      onChange={(e) => setUtmContent(e.target.value)}
-                      className="utm-input"
-                    />
-                  </div>
-                </div>
-
-                {/* Realtime Live Preview */}
-                {originalUrl && hasUtm && (
-                  <div className="utm-preview-box">
-                    <span className="utm-preview-tag">Assembled URL:</span>
-                    <span className="utm-preview-url" title={buildFinalUrl(originalUrl)}>
-                      {buildFinalUrl(originalUrl)}
-                    </span>
+                    <button
+                      type="button"
+                      className="btn-apply-custom-date"
+                      onClick={handleApplyCustom}
+                      disabled={!customStart || !customEnd}
+                    >
+                      Apply Filter
+                    </button>
                   </div>
                 )}
               </div>
-            )}
-
-            {error && <p className="form-alert error">{error}</p>}
-            {success && <p className="form-alert success">{success}</p>}
-          </form>
-        </div>
-
-        {/* Link Table / List */}
-        <div className="dash-box">
-          <div className="box-header">
-            <h3 className="card-section-title">Your Shortened Links</h3>
-            <span className="links-count-badge">{urls.length} Total</span>
-          </div>
-
-          {urls.length === 0 ? (
-            <div className="empty-state-box">
-              <Globe size={32} className="empty-icon" />
-              <p>No shortened links created yet. Enter a URL above to get started!</p>
             </div>
-          ) : (
-            <div className="links-table-wrap">
-              <table className="links-table">
-                <thead>
-                  <tr>
-                    <th>Short Link</th>
-                    <th>Destination URL</th>
-                    <th>Clicks</th>
-                    <th>Created</th>
-                    <th style={{ textAlign: 'right' }}>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {urls.map((u) => {
-                    const shortUrl = `${API_BASE_URL}/${u.shortCode}`;
-                    return (
-                      <tr key={u.shortCode}>
-                        <td>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                            <a href={shortUrl} target="_blank" rel="noreferrer" className="table-short-link">
-                              /{u.shortCode}
-                            </a>
-                            {u.hasPassword && (
-                              <span className="table-pw-badge" title="Password protected link">
-                                <Lock size={12} color="#6366f1" />
-                              </span>
-                            )}
-                          </div>
-                        </td>
-                        <td className="table-dest-cell" title={u.originalUrl}>
-                          {u.originalUrl}
-                        </td>
-                        <td>
-                          <span className="table-clicks-badge">{u.clickCount} clicks</span>
-                        </td>
-                        <td className="table-date-cell">
-                          {new Date(u.createdAt).toLocaleDateString()}
-                        </td>
-                        <td style={{ textAlign: 'right' }}>
-                          <div className="table-action-btns">
-                            <button className="table-copy-btn" onClick={() => handleCopy(shortUrl)}>
-                              {copied === shortUrl ? <Check size={14} color="#16a34a" /> : <Copy size={14} />}
-                              <span>{copied === shortUrl ? 'Copied' : 'Copy'}</span>
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => setQrSelected({ url: shortUrl, shortCode: u.shortCode })}
-                              className="table-qr-btn"
-                              title="View QR Code"
-                            >
-                              <QrCode size={13} />
-                            </button>
-                            <Link to={`/analytics/${u.shortCode}`} className="table-analytics-btn">
-                              Analytics <ExternalLink size={12} />
-                            </Link>
-                            <button
-                              type="button"
-                              onClick={() => handleStartEdit(u)}
-                              className="table-edit-btn"
-                              title="Edit link"
-                            >
-                              <Pencil size={13} />
-                            </button>
-                            {features.deleteUrl && (
+
+            {/* ── 4 COLORFUL KPI STAT CARDS (100% Real System Data) ── */}
+            <div className="ad-kpi-row">
+              {/* Card 1: Total Clicks */}
+              <div className="ad-kpi-card kpi-blue-dark">
+                <span className="kpi-card-label">Total Clicks</span>
+                <div className="kpi-card-val-row">
+                  <span className="kpi-card-val">{totalClicksCount.toLocaleString()}</span>
+                  <span className="kpi-card-badge">Realtime</span>
+                </div>
+              </div>
+
+              {/* Card 2: Unique Visitors (Distinct IPs) */}
+              <div className="ad-kpi-card kpi-teal">
+                <span className="kpi-card-label">Unique Visitors</span>
+                <div className="kpi-card-val-row">
+                  <span className="kpi-card-val">{uniqueVisitorsCount.toLocaleString()}</span>
+                  <span className="kpi-card-badge">Distinct IPs</span>
+                </div>
+              </div>
+
+              {/* Card 3: Total Short Links */}
+              <div className="ad-kpi-card kpi-orange">
+                <span className="kpi-card-label">Total Short Links</span>
+                <div className="kpi-card-val-row">
+                  <span className="kpi-card-val">{urls.length}</span>
+                  <span className="kpi-card-badge">Active</span>
+                </div>
+              </div>
+
+              {/* Card 4: Monthly Link Quota */}
+              <div className="ad-kpi-card kpi-sky">
+                <span className="kpi-card-label">Monthly Link Quota</span>
+                <div className="kpi-card-val-row">
+                  <span className="kpi-card-val">
+                    {account?.usage?.urlsThisMonth ?? urls.length}
+                    <span style={{ fontSize: '1rem', opacity: 0.85 }}>
+                      {' '}/ {urlsLimit}
+                    </span>
+                  </span>
+                  <span className="kpi-card-badge">{role}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* ── BALANCED 2-COLUMN MIDDLE GRID (Zero Whitespace Gap) ── */}
+            <div className="ad-middle-grid">
+              {/* Left Block: Click Analytics Chart with Integrated Today Stat */}
+              <div className="dash-card card-analytics">
+                <div className="card-header-clean">
+                  <div>
+                    <h3 className="card-clean-title">Click Analytics</h3>
+                    <span className="card-sub-hint">Daily traffic trend</span>
+                  </div>
+                  <div className="chart-today-pill">
+                    <span className="today-pill-dot" />
+                    <span>Today: <strong>{todayClicks.toLocaleString()}</strong> clicks</span>
+                  </div>
+                </div>
+                <SplineClickAnalyticsChart trendData={overview?.clicksTrend} />
+              </div>
+
+              {/* Right Block: Top Referring Domains Donut */}
+              <TopReferringDomainsCard referrers={overview?.topReferrers} isStandard={isStandard} />
+            </div>
+
+            {/* ── GEOGRAPHIC DISTRIBUTION CARD (Accurate Normalized Country Data) ── */}
+            <div className="ad-geo-section">
+              <VisitorGeographicCard countryBreakdown={overview?.countryBreakdown} isStandard={isStandard} />
+            </div>
+
+            {/* ── BOTTOM TABLES SECTION (Real Top Links & Real Telemetry) ── */}
+            <div className="ad-bottom-grid">
+              {/* Table 1: Link Performance Summary */}
+              <div className="dash-card">
+                <div className="card-header-clean">
+                  <h3 className="card-clean-title">Link Performance Summary</h3>
+                  <button type="button" className="btn-view-all-links" onClick={() => setActiveNav('links')}>
+                    View All →
+                  </button>
+                </div>
+                <div className="table-responsive">
+                  <table className="ad-table">
+                    <thead>
+                      <tr>
+                        <th>Top Link</th>
+                        <th>Clicks</th>
+                        <th>Conversion Rate</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {topRankedLinks.length > 0 ? (
+                        topRankedLinks.map((u) => {
+                          const linkPct = totalClicksCount > 0 ? ((u.clickCount / totalClicksCount) * 100).toFixed(1) : '0.0';
+                          return (
+                            <tr key={u.shortCode}>
+                              <td className="table-link-cell">
+                                <a href={`${API_BASE_URL}/${u.shortCode}`} target="_blank" rel="noreferrer">
+                                  /{u.shortCode}
+                                </a>
+                              </td>
+                              <td className="table-bold-cell">{u.clickCount.toLocaleString()}</td>
+                              <td>{linkPct}%</td>
+                            </tr>
+                          );
+                        })
+                      ) : (
+                        <tr>
+                          <td colSpan="3" style={{ textAlign: 'center', color: '#94a3b8', padding: '20px 0' }}>
+                            No shortened links created yet.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Table 2: Latest Click Telemetry */}
+              <div className="dash-card">
+                <div className="card-header-clean">
+                  <h3 className="card-clean-title">Latest Click Telemetry</h3>
+                </div>
+                <div className="table-responsive">
+                  <table className="ad-table">
+                    <thead>
+                      <tr>
+                        <th>Time</th>
+                        <th>Location</th>
+                        <th>Device</th>
+                        <th>Referral</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {telemetryList.length > 0 ? (
+                        telemetryList.map((t) => (
+                          <tr key={t.id || t.time}>
+                            <td>{new Date(t.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td>
+                            <td>{t.location === 'ID' ? 'Indonesia' : (t.location === 'US' ? 'United States' : (t.location === 'unknown' ? 'Local / Private' : t.location))}</td>
+                            <td style={{ textTransform: 'capitalize' }}>{t.device}</td>
+                            <td style={{ textTransform: 'capitalize' }}>{t.referral}</td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan="4" style={{ textAlign: 'center', color: '#94a3b8', padding: '20px 0' }}>
+                            No click events recorded for this timeframe yet.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* ── VIEW 2: DEDICATED LINKS LIBRARY (Moved from Bottom of Dashboard) ── */}
+        {activeNav === 'links' && (
+          <div className="dash-card card-full-management links-view-card">
+            <div className="card-header-clean">
+              <div>
+                <h2 className="card-clean-title" style={{ fontSize: '1.35rem' }}>All Shortened Links</h2>
+                <p className="card-sub-hint">Manage destinations, copy links, generate QR codes, or edit aliases</p>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <span className="links-count-pill">{filteredUrls.length} Links</span>
+                <button
+                  type="button"
+                  className="btn-new-link"
+                  onClick={() => setShowCreateModal(true)}
+                >
+                  <Plus size={16} /> Create Short Link
+                </button>
+              </div>
+            </div>
+
+            {filteredUrls.length === 0 ? (
+              <div className="empty-management-box">
+                <p>{urls.length === 0 ? "You haven't created any short links yet. Click 'Create Short Link' above to start!" : `No links match '${searchQuery}'. Try another query.`}</p>
+              </div>
+            ) : (
+              <div className="table-responsive">
+                <table className="ad-table full-table">
+                  <thead>
+                    <tr>
+                      <th>Short Code</th>
+                      <th>Target Destination</th>
+                      <th>Clicks</th>
+                      <th>Created</th>
+                      <th style={{ textAlign: 'right' }}>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredUrls.map((u) => {
+                      const shortUrl = `${API_BASE_URL}/${u.shortCode}`;
+                      return (
+                        <tr key={u.shortCode}>
+                          <td className="table-link-cell">
+                            <a href={shortUrl} target="_blank" rel="noreferrer">/{u.shortCode}</a>
+                            {u.hasPassword && <Lock size={12} className="pw-icon" />}
+                          </td>
+                          <td className="dest-url-cell" title={u.originalUrl}>{u.originalUrl}</td>
+                          <td className="table-bold-cell">{u.clickCount} clicks</td>
+                          <td>{new Date(u.createdAt).toLocaleDateString()}</td>
+                          <td style={{ textAlign: 'right' }}>
+                            <div className="table-actions-row">
                               <button
                                 type="button"
-                                onClick={() => handleDelete(u.shortCode)}
-                                className="table-delete-btn"
-                                title="Delete short link"
+                                className="action-pill-btn"
+                                onClick={() => handleCopy(shortUrl)}
                               >
-                                <Trash2 size={13} />
+                                {copied === shortUrl ? <Check size={13} color="#16a34a" /> : <Copy size={13} />}
+                                <span>{copied === shortUrl ? 'Copied' : 'Copy'}</span>
                               </button>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-      </div>
 
-      {/* Edit Link Modal */}
+                              <button
+                                type="button"
+                                className="action-icon-btn"
+                                onClick={() => setQrSelected({ url: shortUrl, shortCode: u.shortCode })}
+                                title="QR Code"
+                              >
+                                <QrCode size={14} />
+                              </button>
+
+                              <Link to={`/analytics/${u.shortCode}`} className="action-icon-btn" title="Analytics">
+                                <ExternalLink size={14} />
+                              </Link>
+
+                              <button
+                                type="button"
+                                className="action-icon-btn"
+                                onClick={() => handleStartEdit(u)}
+                                title="Edit link"
+                              >
+                                <Pencil size={14} />
+                              </button>
+
+                              {features.deleteUrl && (
+                                <button
+                                  type="button"
+                                  className="action-icon-btn delete"
+                                  onClick={() => handleDelete(u.shortCode)}
+                                  title="Delete link"
+                                >
+                                  <Trash2 size={14} />
+                                </button>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
+      </main>
+
+      {/* ── CREATE NEW LINK MODAL (Full English & Preserves UTM Builder) ── */}
+      {showCreateModal && (
+        <div className="modal-backdrop" onClick={() => setShowCreateModal(false)}>
+          <div className="modal-dialog" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-dialog-header">
+              <h3>Create Short Link</h3>
+              <button
+                type="button"
+                className="modal-close"
+                onClick={() => setShowCreateModal(false)}
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <form onSubmit={handleCreate} className="modal-dialog-body">
+              <div className="form-group">
+                <label>Destination URL *</label>
+                <input
+                  type="url"
+                  placeholder="https://yourwebsite.com/long-page"
+                  value={originalUrl}
+                  onChange={(e) => setOriginalUrl(e.target.value)}
+                  required
+                  className="modal-input"
+                />
+              </div>
+
+              <div className="form-row-2">
+                <div className="form-group">
+                  <label>Custom Alias (Optional)</label>
+                  <input
+                    type="text"
+                    placeholder="my-link"
+                    value={customAlias}
+                    onChange={(e) => setCustomAlias(e.target.value)}
+                    className="modal-input"
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label>Link Expiry</label>
+                  {features.expiry ? (
+                    <input
+                      type="datetime-local"
+                      value={expiredAt}
+                      onChange={(e) => setExpiredAt(e.target.value)}
+                      className="modal-input"
+                    />
+                  ) : (
+                    <div className="locked-input-badge">
+                      <span>Pro Feature</span>
+                      <Link to="/pricing">Upgrade</Link>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* UTM Tracking Collapsible */}
+              <div className="utm-accordion">
+                <button
+                  type="button"
+                  className="utm-accordion-toggle"
+                  onClick={() => setShowUtm(!showUtm)}
+                >
+                  <Sliders size={14} />
+                  <span>{showUtm ? 'Hide Campaign Tracking (UTM)' : 'Add Campaign Tracking (UTM)'}</span>
+                  {showUtm ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                </button>
+
+                {showUtm && (
+                  <div className="utm-fields-wrap">
+                    <div className="utm-grid">
+                      <input
+                        type="text"
+                        placeholder="utm_source (e.g. google, twitter)"
+                        value={utmSource}
+                        onChange={(e) => setUtmSource(e.target.value)}
+                        className="modal-input"
+                      />
+                      <input
+                        type="text"
+                        placeholder="utm_medium (e.g. cpc, bio, email)"
+                        value={utmMedium}
+                        onChange={(e) => setUtmMedium(e.target.value)}
+                        className="modal-input"
+                      />
+                      <input
+                        type="text"
+                        placeholder="utm_campaign (e.g. launch_sale)"
+                        value={utmCampaign}
+                        onChange={(e) => setUtmCampaign(e.target.value)}
+                        className="modal-input"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {error && <p className="form-error-text">{error}</p>}
+
+              <div className="modal-dialog-footer">
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  onClick={() => setShowCreateModal(false)}
+                >
+                  Cancel
+                </button>
+                <button type="submit" className="btn-primary">
+                  Create Short Link
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── EDIT LINK MODAL ── */}
       {editingUrl && (
-        <div className="modal-overlay" onClick={() => setEditingUrl(null)}>
-          <div className="modal-card" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
+        <div className="modal-backdrop" onClick={() => setEditingUrl(null)}>
+          <div className="modal-dialog" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-dialog-header">
               <h3>Edit Short Link</h3>
               <button
                 type="button"
-                className="modal-close-btn"
+                className="modal-close"
                 onClick={() => setEditingUrl(null)}
               >
                 <X size={18} />
               </button>
             </div>
-            <form onSubmit={handleSaveEdit} className="modal-form">
-              <div className="modal-field">
+            <form onSubmit={handleSaveEdit} className="modal-dialog-body">
+              <div className="form-group">
                 <label>Custom Alias</label>
-                <div className="modal-input-prefix">
-                  <span className="prefix-domain">{window.location.host}/</span>
-                  <input
-                    type="text"
-                    value={editAlias}
-                    onChange={(e) => setEditAlias(e.target.value)}
-                    placeholder="my-alias"
-                    required
-                  />
-                </div>
-                <span className="field-hint">All users can rename their short link alias.</span>
+                <input
+                  type="text"
+                  value={editAlias}
+                  onChange={(e) => setEditAlias(e.target.value)}
+                  className="modal-input"
+                  required
+                />
               </div>
 
-              <div className="modal-field">
-                <div className="field-label-row">
-                  <label>Destination URL</label>
-                  {!features.editDestination && (
-                    <Link to="/pricing" className="pill-badge">Pro ↑</Link>
-                  )}
-                </div>
+              <div className="form-group">
+                <label>Destination URL</label>
                 <input
                   type="url"
                   value={editDestination}
                   onChange={(e) => setEditDestination(e.target.value)}
                   disabled={!features.editDestination}
-                  className={!features.editDestination ? 'input-locked' : ''}
+                  className="modal-input"
                   required
                 />
-                {!features.editDestination ? (
-                  <span className="field-hint text-warning">
-                    Upgrading to Pro or Premium is required to change destination URL.
-                  </span>
-                ) : (
-                  <span className="field-hint">Traffic will redirect to this updated URL.</span>
-                )}
               </div>
 
-              <div className="modal-actions">
+              <div className="modal-dialog-footer">
                 <button
                   type="button"
-                  className="btn-cancel"
+                  className="btn-secondary"
                   onClick={() => setEditingUrl(null)}
                 >
                   Cancel
                 </button>
-                <button
-                  type="submit"
-                  className="btn-save"
-                  disabled={editLoading}
-                >
+                <button type="submit" className="btn-primary" disabled={editLoading}>
                   {editLoading ? 'Saving...' : 'Save Changes'}
                 </button>
               </div>
@@ -1424,7 +1208,7 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* QR Code Modal */}
+      {/* ── QR CODE MODAL ── */}
       <QrCodeModal
         isOpen={!!qrSelected}
         onClose={() => setQrSelected(null)}

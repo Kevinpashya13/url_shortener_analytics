@@ -207,6 +207,9 @@ async function getUserOverviewAnalytics(userId, role = 'STANDARD', options = {})
       urlId: { in: urlIds },
       ...(Object.keys(dateFilter).length > 0 ? { clickedAt: dateFilter } : {}),
     },
+    include: {
+      url: { select: { shortCode: true } },
+    },
     orderBy: { clickedAt: 'asc' },
   });
 
@@ -250,12 +253,31 @@ async function getUserOverviewAnalytics(userId, role = 'STANDARD', options = {})
   }
 
   const limits = getLimits(role);
+  const uniqueIps = new Set(logs.map((l) => l.ipAddress).filter(Boolean)).size;
+
+  const recentClicks = [...logs]
+    .reverse()
+    .slice(0, 5)
+    .map((l) => ({
+      id: l.id,
+      time: l.clickedAt,
+      location: l.country || 'unknown',
+      device: l.deviceType || 'desktop',
+      browser: l.browser || 'unknown',
+      referral: l.referrer || 'direct',
+      shortCode: l.url?.shortCode || '',
+    }));
+
+  const topReferrers = groupByField(logs, 'referrer', 'direct');
 
   const overview = {
     totalUrls,
     totalClicks,
     filteredClicks: logs.length,
+    uniqueVisitors: uniqueIps,
     clicksTrend: points,
+    recentClicks,
+    topReferrers: limits.fullAnalytics ? topReferrers : [],
     deviceBreakdown: [],
     browserBreakdown: [],
     countryBreakdown: [],
