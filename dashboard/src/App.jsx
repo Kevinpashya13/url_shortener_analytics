@@ -3,6 +3,8 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import { ToastProvider } from './context/ToastContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import Navbar from './components/Navbar';
+import Footer from './components/Footer';
+import { PageSkeleton } from './components/Skeleton';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import DashboardPage from './pages/DashboardPage';
@@ -14,8 +16,11 @@ import FeaturesPage from './pages/FeaturesPage';
 
 function AppRoutes() {
   const { user, loading } = useAuth();
+  const location = useLocation();
 
-  if (loading) return <div>Loading...</div>;
+  if (loading) return <PageSkeleton />;
+
+  const hideFooter = ['/login', '/register', '/get-started'].includes(location.pathname);
 
   return (
     <>
@@ -37,6 +42,7 @@ function AppRoutes() {
         />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+      {!hideFooter && <Footer />}
     </>
   );
 }

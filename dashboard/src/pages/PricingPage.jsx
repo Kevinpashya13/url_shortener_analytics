@@ -1,66 +1,59 @@
 import { useState, Fragment } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Check, X, Sparkles } from 'lucide-react';
+import { 
+  Check, X, Sparkles, ChevronDown, ChevronUp, 
+  ShieldCheck, Zap, Lock, ArrowRight 
+} from 'lucide-react';
 import './PricingPage.css';
 
-const PLANS = [
+const FAQS = [
   {
-    key: 'STANDARD',
-    name: 'Free',
-    price: '$0',
-    tagline: 'For personal testing',
-    color: '#94a3b8',
-    cta: 'Current Plan',
-    ctaStyle: 'gray',
+    q: 'Can I upgrade or downgrade my plan at any time?',
+    a: 'Yes, absolutely. Plan changes take effect immediately in your account with zero downtime or waiting period.',
   },
   {
-    key: 'PRO',
-    name: 'Pro',
-    price: 'Paid',
-    tagline: 'For creators & growth',
-    color: '#6366f1',
-    highlight: true,
-    cta: 'Upgrade to Pro',
-    ctaStyle: 'pro',
-    targetRole: 'PRO',
+    q: 'What happens if I reach my monthly link creation quota?',
+    a: 'Your existing shortened links will remain fully operational and continue logging click analytics normally. You will only need to upgrade if you wish to generate additional new links during that calendar month.',
   },
   {
-    key: 'PREMIUM',
-    name: 'Premium',
-    price: 'Paid',
-    tagline: 'Maximum volume & power',
-    color: '#a855f7',
-    cta: 'Upgrade to Premium',
-    ctaStyle: 'premium',
-    targetRole: 'PREMIUM',
+    q: 'How do Smart Fallback URLs work on the Premium plan?',
+    a: 'When a time-sensitive campaign link reaches its expiration date, visitors are automatically routed to your specified fallback destination rather than encountering a broken page.',
+  },
+  {
+    q: 'Does the Free plan require a credit card?',
+    a: 'No credit card or payment details are required. You can sign up and shorten up to 25 links per month completely free forever.',
   },
 ];
 
-const FEATURES_TABLE = [
+const COMPARISON_DATA = [
   {
-    category: 'Quotas & Usage',
-    items: [
-      { label: 'Monthly Short Links', free: '25 URLs / mo', pro: '150 URLs / mo', premium: '1,000 URLs / mo' },
-      { label: 'Monthly Click Tracking', free: '1,000 clicks', pro: '5,000 clicks', premium: '100,000 clicks (100k)' },
+    category: 'Quotas & Capacity',
+    rows: [
+      { feature: 'Monthly Short Links', free: '25 URLs / mo', pro: '150 URLs / mo', premium: '1,000 URLs / mo' },
+      { feature: 'Monthly Click Tracking', free: '1,000 clicks', pro: '5,000 clicks', premium: '100,000 clicks' },
     ],
   },
   {
-    category: 'Link Customization & Control',
-    items: [
-      { label: 'Instant QR Code & PNG Download', free: true, pro: true, premium: true },
-      { label: 'Custom Alias', free: true, pro: true, premium: true },
-      { label: 'Rename Alias (Keeps Analytics)', free: true, pro: true, premium: true },
-      { label: 'Edit Destination URL', free: false, pro: true, premium: true },
-      { label: 'Delete Short Links', free: false, pro: true, premium: true },
-      { label: 'Link Expiry Date', free: false, pro: true, premium: true },
+    category: 'Link Features & Customization',
+    rows: [
+      { feature: 'High-Res QR Code PNG Download', free: true, pro: true, premium: true },
+      { feature: 'Custom Branded Alias (s.id/your-brand)', free: true, pro: true, premium: true },
+      { feature: 'Rename Alias (Preserves Analytics)', free: true, pro: true, premium: true },
+      { feature: 'Edit Target URL Anytime', free: false, pro: true, premium: true },
+      { feature: 'Delete Short Links from Library', free: false, pro: true, premium: true },
+      { feature: 'Link Expiration Date Controls', free: false, pro: true, premium: true },
+      { feature: 'Smart Fallback URL (Upon Expiration)', free: false, pro: false, premium: true },
     ],
   },
   {
-    category: 'Analytics & Automation',
-    items: [
-      { label: 'Analytics Depth', free: 'Basic (Total & Daily)', pro: 'Full (Geo, Device, Browser)', premium: 'Full (Geo, Device, Browser)' },
-      { label: 'Custom Fallback URL (on expired)', free: false, pro: false, premium: true },
+    category: 'Analytics Depth & Telemetry',
+    rows: [
+      { feature: 'Total & Daily Click History Chart', free: true, pro: true, premium: true },
+      { feature: 'Geographic Country Breakdown', free: false, pro: true, premium: true },
+      { feature: 'Device & Browser Intelligence', free: false, pro: true, premium: true },
+      { feature: 'Referrer Sources & UTM Campaign Builder', free: false, pro: true, premium: true },
+      { feature: 'Export Analytics to CSV (UTF-8 BOM)', free: true, pro: true, premium: true },
     ],
   },
 ];
@@ -68,167 +61,357 @@ const FEATURES_TABLE = [
 export default function PricingPage() {
   const { user } = useAuth();
   const currentRole = user?.role || 'STANDARD';
-  const [activeTab, setActiveTab] = useState('PRO');
+  
+  const [billingCycle, setBillingCycle] = useState('annual'); // 'monthly' | 'annual'
+  const [showTable, setShowTable] = useState(false);
+  const [activeFaq, setActiveFaq] = useState(null);
 
-  const selectedPlan = PLANS.find((p) => p.key === activeTab) || PLANS[1];
+  const isAnnual = billingCycle === 'annual';
 
-  const renderValue = (val) => {
-    if (typeof val === 'boolean') {
-      return val ? (
-        <span className="table-check"><Check size={18} /></span>
-      ) : (
-        <span className="table-cross"><X size={18} /></span>
-      );
-    }
-    return <span className="table-text-val">{val}</span>;
+  const toggleFaq = (idx) => {
+    setActiveFaq(activeFaq === idx ? null : idx);
   };
 
-  const getPlanVal = (item, planKey) => {
-    if (planKey === 'STANDARD') return item.free;
-    if (planKey === 'PRO') return item.pro;
-    return item.premium;
+  const renderCell = (val) => {
+    if (typeof val === 'boolean') {
+      return val ? (
+        <span className="matrix-check"><Check size={18} /></span>
+      ) : (
+        <span className="matrix-cross"><X size={18} /></span>
+      );
+    }
+    return <span className="matrix-text">{val}</span>;
   };
 
   return (
-    <div className="pricing">
-      <div className="pricing-hero">
-        <h1 className="pricing-title">Compare Plans & Features</h1>
-        <p className="pricing-subtitle">
-          Choose the plan that fits your link shortening and analytics scale.
+    <div className="pricing-page">
+      {/* ── Hero Section ── */}
+      <section className="pricing-hero">
+        <div className="pricing-eyebrow">
+          <Sparkles size={14} />
+          <span>Transparent &amp; Predictable Pricing</span>
+        </div>
+        <h1 className="pricing-headline">
+          Plans that scale with your <br />
+          <span className="pricing-headline-accent">audience &amp; link volume</span>
+        </h1>
+        <p className="pricing-subtext">
+          Start for free with zero commitments. Upgrade anytime for branded aliases, deep clickstream telemetry, and automated fallback redirection.
         </p>
-      </div>
 
-      {/* ── DESKTOP VIEW: Full 4-Column Table (>= 768px) ── */}
-      <div className="pricing-table-wrapper desktop-only">
-        <table className="pricing-table">
-          <thead>
-            <tr>
-              <th className="th-features">Plan Overview</th>
-              {PLANS.map((plan) => {
-                const isCurrent = currentRole === plan.key;
-                return (
-                  <th key={plan.key} className={`th-plan ${plan.highlight ? 'th-highlight' : ''}`}>
-                    {plan.highlight && (
-                      <div className="table-popular-tag">
-                        <Sparkles size={12} /> Most Popular
-                      </div>
-                    )}
-                    <div className="table-plan-name" style={{ color: plan.color }}>{plan.name}</div>
-                    <div className="table-plan-price">{plan.price}</div>
-                    <div className="table-plan-tagline">{plan.tagline}</div>
-                    <div className="table-plan-cta">
-                      {isCurrent ? (
-                        <span className="cta-current-badge">✓ Current plan</span>
-                      ) : !user ? (
-                        <Link to="/register" className={`table-cta-btn cta-${plan.ctaStyle}`}>
-                          Get Started
-                        </Link>
-                      ) : plan.targetRole ? (
-                        <Link
-                          to="/dashboard"
-                          state={{ upgradeRole: plan.targetRole }}
-                          className={`table-cta-btn cta-${plan.ctaStyle}`}
-                        >
-                          {plan.cta}
-                        </Link>
-                      ) : (
-                        <span className="cta-current-badge">✓ Current plan</span>
-                      )}
-                    </div>
-                  </th>
-                );
-              })}
-            </tr>
-          </thead>
-          <tbody>
-            {FEATURES_TABLE.map((section, sIdx) => (
-              <Fragment key={sIdx}>
-                <tr className="table-section-row">
-                  <td colSpan={4}>{section.category}</td>
-                </tr>
-                {section.items.map((item, iIdx) => (
-                  <tr key={iIdx} className="table-data-row">
-                    <td className="td-feature-name">{item.label}</td>
-                    <td className="td-val">{renderValue(item.free)}</td>
-                    <td className="td-val td-highlight">{renderValue(item.pro)}</td>
-                    <td className="td-val">{renderValue(item.premium)}</td>
-                  </tr>
-                ))}
-              </Fragment>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      {/* ── MOBILE VIEW: Interactive Tab Switcher (< 768px) ── */}
-      <div className="pricing-mobile-view mobile-only">
-        <div className="mobile-plan-tabs">
-          {PLANS.map((p) => (
+        {/* Billing Switcher Toggle */}
+        <div className="pricing-toggle-wrap">
+          <div className="pricing-toggle">
             <button
-              key={p.key}
               type="button"
-              className={`mobile-tab-btn ${activeTab === p.key ? 'active' : ''} ${p.highlight ? 'is-highlight' : ''}`}
-              onClick={() => setActiveTab(p.key)}
+              className={`toggle-btn ${!isAnnual ? 'active' : ''}`}
+              onClick={() => setBillingCycle('monthly')}
             >
-              {p.name}
-              {p.highlight && <span className="tab-dot">★</span>}
+              Monthly
             </button>
-          ))}
+            <button
+              type="button"
+              className={`toggle-btn ${isAnnual ? 'active' : ''}`}
+              onClick={() => setBillingCycle('annual')}
+            >
+              Annually
+              <span className="discount-pill">Save 25%</span>
+            </button>
+          </div>
         </div>
+      </section>
 
-        <div className="mobile-plan-card">
-          <div className="mobile-card-top">
-            <div>
-              <h2 className="mobile-plan-title" style={{ color: selectedPlan.color }}>{selectedPlan.name} Plan</h2>
-              <p className="mobile-plan-sub">{selectedPlan.tagline}</p>
-            </div>
-            <div className="mobile-plan-price">{selectedPlan.price}</div>
-          </div>
-
-          <div className="mobile-card-cta">
-            {currentRole === selectedPlan.key ? (
-              <span className="cta-current-badge">✓ Current plan</span>
-            ) : !user ? (
-              <Link to="/register" className={`table-cta-btn cta-${selectedPlan.ctaStyle}`}>
-                Get Started
-              </Link>
-            ) : selectedPlan.targetRole ? (
-              <Link
-                to="/dashboard"
-                state={{ upgradeRole: selectedPlan.targetRole }}
-                className={`table-cta-btn cta-${selectedPlan.ctaStyle}`}
-              >
-                {selectedPlan.cta}
-              </Link>
-            ) : (
-              <span className="cta-current-badge">✓ Current plan</span>
-            )}
-          </div>
-
-          <div className="mobile-features-list">
-            {FEATURES_TABLE.map((section, sIdx) => (
-              <div key={sIdx} className="mobile-feature-group">
-                <div className="mobile-group-title">{section.category}</div>
-                {section.items.map((item, iIdx) => {
-                  const val = getPlanVal(item, activeTab);
-                  return (
-                    <div key={iIdx} className="mobile-feature-item">
-                      <span className="mobile-feat-label">{item.label}</span>
-                      <span className="mobile-feat-val">{renderValue(val)}</span>
-                    </div>
-                  );
-                })}
+      {/* ── 3 Main Pricing Cards ── */}
+      <section className="pricing-cards-container">
+        <div className="pricing-cards-grid">
+          {/* 1. Free Plan */}
+          <div className="pricing-card standard">
+            <div className="card-header">
+              <span className="plan-badge">Starter</span>
+              <h3 className="card-plan-name">Free</h3>
+              <p className="card-plan-desc">For individual link testing and personal side projects.</p>
+              <div className="card-price-wrap">
+                <span className="price-currency">$</span>
+                <span className="price-number">0</span>
+                <span className="price-period">/ forever</span>
               </div>
-            ))}
+            </div>
+
+            <div className="card-cta-wrap">
+              {currentRole === 'STANDARD' && user ? (
+                <button type="button" className="card-btn current" disabled>
+                  Current Plan
+                </button>
+              ) : !user ? (
+                <Link to="/register" className="card-btn outline">
+                  Get Started Free
+                </Link>
+              ) : (
+                <button type="button" className="card-btn outline" disabled>
+                  Included
+                </button>
+              )}
+            </div>
+
+            <div className="card-features-list">
+              <span className="features-group-title">Features included:</span>
+              <div className="feature-bullet">
+                <Check size={16} className="bullet-icon" />
+                <span><strong>25</strong> short links / month</span>
+              </div>
+              <div className="feature-bullet">
+                <Check size={16} className="bullet-icon" />
+                <span><strong>1,000</strong> click tracking</span>
+              </div>
+              <div className="feature-bullet">
+                <Check size={16} className="bullet-icon" />
+                <span>Instant QR code &amp; PNG download</span>
+              </div>
+              <div className="feature-bullet">
+                <Check size={16} className="bullet-icon" />
+                <span>Custom branded aliases</span>
+              </div>
+              <div className="feature-bullet">
+                <Check size={16} className="bullet-icon" />
+                <span>Export analytics to CSV</span>
+              </div>
+            </div>
+          </div>
+
+          {/* 2. Pro Plan (Featured) */}
+          <div className="pricing-card pro featured">
+            <div className="featured-banner">
+              <Sparkles size={13} />
+              <span>MOST POPULAR</span>
+            </div>
+
+            <div className="card-header">
+              <span className="plan-badge pro">Creators &amp; Growth</span>
+              <h3 className="card-plan-name">Pro</h3>
+              <p className="card-plan-desc">For creators, marketers, and brands requiring telemetry insights.</p>
+              <div className="card-price-wrap">
+                <span className="price-currency">$</span>
+                <span className="price-number">{isAnnual ? '9' : '12'}</span>
+                <span className="price-period">/ month</span>
+              </div>
+              {isAnnual && <span className="billed-annually-hint">Billed $108 annually</span>}
+            </div>
+
+            <div className="card-cta-wrap">
+              {currentRole === 'PRO' ? (
+                <button type="button" className="card-btn current" disabled>
+                  Current Plan
+                </button>
+              ) : !user ? (
+                <Link to="/register" className="card-btn primary-glow">
+                  Get Started with Pro <ArrowRight size={15} />
+                </Link>
+              ) : (
+                <Link
+                  to="/dashboard"
+                  state={{ upgradeRole: 'PRO' }}
+                  className="card-btn primary-glow"
+                >
+                  Upgrade to Pro <ArrowRight size={15} />
+                </Link>
+              )}
+            </div>
+
+            <div className="card-features-list">
+              <span className="features-group-title">Everything in Free, plus:</span>
+              <div className="feature-bullet">
+                <Check size={16} className="bullet-icon highlight" />
+                <span><strong>150</strong> short links / month</span>
+              </div>
+              <div className="feature-bullet">
+                <Check size={16} className="bullet-icon highlight" />
+                <span><strong>5,000</strong> click tracking</span>
+              </div>
+              <div className="feature-bullet">
+                <Check size={16} className="bullet-icon highlight" />
+                <span><strong>Full Telemetry Analytics</strong> (Geo &amp; Device)</span>
+              </div>
+              <div className="feature-bullet">
+                <Check size={16} className="bullet-icon highlight" />
+                <span><strong>Edit target URL</strong> anytime</span>
+              </div>
+              <div className="feature-bullet">
+                <Check size={16} className="bullet-icon highlight" />
+                <span>Link expiration timer controls</span>
+              </div>
+              <div className="feature-bullet">
+                <Check size={16} className="bullet-icon highlight" />
+                <span>Delete &amp; manage link library</span>
+              </div>
+            </div>
+          </div>
+
+          {/* 3. Premium Plan */}
+          <div className="pricing-card premium">
+            <div className="card-header">
+              <span className="plan-badge premium">Scale &amp; Teams</span>
+              <h3 className="card-plan-name">Premium</h3>
+              <p className="card-plan-desc">For high-traffic operations, marketing campaigns, and agencies.</p>
+              <div className="card-price-wrap">
+                <span className="price-currency">$</span>
+                <span className="price-number">{isAnnual ? '29' : '39'}</span>
+                <span className="price-period">/ month</span>
+              </div>
+              {isAnnual && <span className="billed-annually-hint">Billed $348 annually</span>}
+            </div>
+
+            <div className="card-cta-wrap">
+              {currentRole === 'PREMIUM' ? (
+                <button type="button" className="card-btn current" disabled>
+                  Current Plan
+                </button>
+              ) : !user ? (
+                <Link to="/register" className="card-btn purple-btn">
+                  Get Started with Premium
+                </Link>
+              ) : (
+                <Link
+                  to="/dashboard"
+                  state={{ upgradeRole: 'PREMIUM' }}
+                  className="card-btn purple-btn"
+                >
+                  Upgrade to Premium
+                </Link>
+              )}
+            </div>
+
+            <div className="card-features-list">
+              <span className="features-group-title">Everything in Pro, plus:</span>
+              <div className="feature-bullet">
+                <Check size={16} className="bullet-icon premium" />
+                <span><strong>1,000</strong> short links / month</span>
+              </div>
+              <div className="feature-bullet">
+                <Check size={16} className="bullet-icon premium" />
+                <span><strong>100,000 (100k)</strong> click tracking</span>
+              </div>
+              <div className="feature-bullet">
+                <Check size={16} className="bullet-icon premium" />
+                <span><strong>Smart Custom Fallback URL</strong> on expired</span>
+              </div>
+              <div className="feature-bullet">
+                <Check size={16} className="bullet-icon premium" />
+                <span>Automated UTM Campaign Builder</span>
+              </div>
+              <div className="feature-bullet">
+                <Check size={16} className="bullet-icon premium" />
+                <span>Priority rate limits &amp; technical support</span>
+              </div>
+            </div>
           </div>
         </div>
-      </div>
+      </section>
 
-      {!user && (
-        <p className="pricing-note">
-          Already have an account? <Link to="/login">Sign in</Link>
-        </p>
-      )}
+      {/* ── Collapsible Comparison Matrix ── */}
+      <section className="pricing-matrix-section">
+        <div className="matrix-toggle-wrap">
+          <button
+            type="button"
+            className="matrix-toggle-btn"
+            onClick={() => setShowTable(!showTable)}
+          >
+            <span>{showTable ? 'Hide Detailed Feature Comparison' : 'Compare All Features & Limits'}</span>
+            {showTable ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+          </button>
+        </div>
+
+        {showTable && (
+          <div className="matrix-table-card">
+            <table className="matrix-table">
+              <thead>
+                <tr>
+                  <th className="th-feat-col">Features &amp; Specifications</th>
+                  <th className="th-val-col">Free</th>
+                  <th className="th-val-col highlight">Pro</th>
+                  <th className="th-val-col">Premium</th>
+                </tr>
+              </thead>
+              <tbody>
+                {COMPARISON_DATA.map((group, gIdx) => (
+                  <Fragment key={gIdx}>
+                    <tr className="matrix-group-row">
+                      <td colSpan={4} className="matrix-group-header">
+                        {group.category}
+                      </td>
+                    </tr>
+                    {group.rows.map((r, rIdx) => (
+                      <tr key={rIdx} className="matrix-row">
+                        <td className="matrix-col-name">{r.feature}</td>
+                        <td className="matrix-col-val">{renderCell(r.free)}</td>
+                        <td className="matrix-col-val highlight">{renderCell(r.pro)}</td>
+                        <td className="matrix-col-val">{renderCell(r.premium)}</td>
+                      </tr>
+                    ))}
+                  </Fragment>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
+
+      {/* ── Trust Badges ── */}
+      <section className="pricing-trust-section">
+        <div className="trust-grid">
+          <div className="trust-item">
+            <div className="trust-icon-box">
+              <ShieldCheck size={20} />
+            </div>
+            <div>
+              <h4 className="trust-title">Enterprise Security &amp; Sanitization</h4>
+              <p className="trust-desc">Token bucket rate limiting, blacklist verification, and encrypted HTTPS routing.</p>
+            </div>
+          </div>
+          <div className="trust-item">
+            <div className="trust-icon-box">
+              <Zap size={20} />
+            </div>
+            <div>
+              <h4 className="trust-title">Sub-Millisecond Redirections</h4>
+              <p className="trust-desc">In-memory Redis cache-aside architecture delivering lightning-fast edge performance.</p>
+            </div>
+          </div>
+          <div className="trust-item">
+            <div className="trust-icon-box">
+              <Lock size={20} />
+            </div>
+            <div>
+              <h4 className="trust-title">Zero Lock-In, Flexible Billing</h4>
+              <p className="trust-desc">Upgrade instantly or cancel anytime directly from your account settings.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── FAQ Section ── */}
+      <section className="pricing-faq-section">
+        <h2 className="faq-main-title">Frequently Asked Questions</h2>
+        <div className="faq-list">
+          {FAQS.map((faq, idx) => {
+            const isOpen = activeFaq === idx;
+            return (
+              <div key={idx} className={`faq-card ${isOpen ? 'open' : ''}`}>
+                <button
+                  type="button"
+                  className="faq-question-btn"
+                  onClick={() => toggleFaq(idx)}
+                >
+                  <span className="faq-q-text">{faq.q}</span>
+                  <span className="faq-chevron">
+                    {isOpen ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+                  </span>
+                </button>
+                {isOpen && <p className="faq-answer-text">{faq.a}</p>}
+              </div>
+            );
+          })}
+        </div>
+      </section>
     </div>
   );
 }

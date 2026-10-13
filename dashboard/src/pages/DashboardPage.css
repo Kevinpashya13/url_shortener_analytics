@@ -108,16 +108,20 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  background: #0f172a;
+  background: linear-gradient(135deg, #086288 0%, #4d8dba 100%);
   color: #ffffff;
   padding: 8px 16px;
   border-radius: 999px;
   font-size: 0.82rem;
-  font-weight: 600;
+  font-weight: 700;
   text-decoration: none;
-  transition: opacity 0.15s;
+  box-shadow: 0 2px 8px rgba(8, 98, 136, 0.25);
+  transition: all 0.18s;
 }
-.dash-upgrade-btn:hover { opacity: 0.85; }
+.dash-upgrade-btn:hover { 
+  opacity: 0.92;
+  box-shadow: 0 4px 12px rgba(8, 98, 136, 0.35);
+}
 
 /* ── Grid Layout ── */
 .dash-grid-layout {
@@ -577,16 +581,19 @@
   align-items: center;
   gap: 6px;
   padding: 0 24px;
-  background: #0f172a;
+  background: #086288;
   color: #ffffff;
   border: none;
   border-radius: 12px;
   font-size: 0.9rem;
   font-weight: 700;
   cursor: pointer;
-  transition: opacity 0.15s;
+  box-shadow: 0 2px 8px rgba(8, 98, 136, 0.25);
+  transition: all 0.18s;
 }
-.btn-create-submit:hover { opacity: 0.85; }
+.btn-create-submit:hover { 
+  background: #064b68;
+}
 
 .form-options-row {
   display: flex;

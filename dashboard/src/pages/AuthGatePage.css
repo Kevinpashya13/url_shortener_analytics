@@ -1,47 +1,61 @@
-/* AuthGatePage.css */
+/* ==========================================================================
+   AuthGatePage.css — Clean Palette-Aligned (UI/UX Pro Max)
+   Palette: #086288 (Ocean), #4d8dba (Steel), #97d7ff (Sky), #ffefc4 (Cream)
+   ========================================================================== */
+
 .authgate {
-  min-height: 100vh;
+  min-height: calc(100vh - 64px);
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #0a0a0f;
-  padding: 24px;
+  background: #f8fafd;
+  padding: 32px 24px;
 }
 
 .authgate-card {
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
   border-radius: 24px;
-  padding: 52px 44px;
+  padding: 48px 40px;
   max-width: 460px;
   width: 100%;
   text-align: center;
-  box-shadow: 0 32px 80px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 16px 40px -4px rgba(8, 98, 136, 0.08);
 }
 
-.authgate-icon {
-  font-size: 3rem;
-  margin-bottom: 20px;
+.authgate-icon-wrap {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 20px;
+  background: rgba(151, 215, 255, 0.25);
+  border: 1px solid rgba(8, 98, 136, 0.2);
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #086288;
+  box-shadow: 0 6px 16px rgba(8, 98, 136, 0.1);
 }
 
 .authgate-title {
-  font-size: 1.9rem;
+  font-size: 1.85rem;
   font-weight: 800;
-  color: #f0f0f5;
+  color: #086288;
+  letter-spacing: -0.02em;
   margin: 0 0 12px;
 }
 
 .authgate-subtitle {
-  font-size: 1rem;
-  color: #9ca3af;
+  font-size: 0.95rem;
+  color: #526b7a;
   line-height: 1.6;
   margin: 0 0 28px;
 }
 
 .authgate-url-preview {
-  background: rgba(99, 102, 241, 0.1);
-  border: 1px solid rgba(99, 102, 241, 0.25);
-  border-radius: 10px;
+  background: #f1f7fa;
+  border: 1px solid #cbd5e1;
+  border-radius: 12px;
   padding: 12px 16px;
   margin-bottom: 28px;
   text-align: left;
@@ -50,8 +64,8 @@
 .authgate-url-label {
   display: block;
   font-size: 0.75rem;
-  font-weight: 600;
-  color: #a5b4fc;
+  font-weight: 700;
+  color: #086288;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   margin-bottom: 4px;
@@ -59,8 +73,9 @@
 
 .authgate-url-text {
   display: block;
-  font-size: 0.88rem;
-  color: #e5e7eb;
+  font-size: 0.9rem;
+  color: #0f172a;
+  font-family: var(--mono);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -70,40 +85,57 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
-  margin-bottom: 32px;
+  margin-bottom: 28px;
 }
 
 .authgate-btn {
   display: block;
-  padding: 14px;
-  border-radius: 12px;
+  padding: 13px;
+  border-radius: 10px;
   font-weight: 700;
-  font-size: 1rem;
+  font-size: 0.95rem;
   text-decoration: none;
-  transition: opacity 0.2s;
+  transition: all 0.18s;
 }
 
 .authgate-btn.primary {
-  background: linear-gradient(135deg, #6366f1, #8b5cf6);
-  color: #fff;
+  background: #086288;
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(8, 98, 136, 0.25);
+}
+
+.authgate-btn.primary:hover {
+  background: #064b68;
 }
 
 .authgate-btn.secondary {
-  background: rgba(255, 255, 255, 0.07);
-  color: #e5e7eb;
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: #ffffff;
+  color: #086288;
+  border: 1.5px solid #cbd5e1;
 }
 
-.authgate-btn:hover { opacity: 0.85; }
+.authgate-btn.secondary:hover {
+  border-color: #086288;
+  background: rgba(151, 215, 255, 0.12);
+}
 
 .authgate-perks {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 10px;
 }
 
 .authgate-perk {
-  font-size: 0.86rem;
-  color: #6b7280;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  font-size: 0.88rem;
+  color: #475569;
+  font-weight: 600;
 }
 
+.authgate-perk-icon {
+  color: #10b981;
+  flex-shrink: 0;
+}

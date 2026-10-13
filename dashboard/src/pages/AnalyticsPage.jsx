@@ -10,6 +10,7 @@ import { useAuth } from '../context/AuthContext';
 import QrCodeModal from '../components/QrCodeModal';
 import { generateAnalyticsCsv, downloadCsv } from '../utils/csvExport';
 import { useToast } from '../context/ToastContext';
+import { AnalyticsSkeleton } from '../components/Skeleton';
 import './AnalyticsPage.css';
 
 const regionNames = new Intl.DisplayNames(['en'], { type: 'region' });
@@ -765,7 +766,7 @@ export default function AnalyticsPage() {
     );
   }
 
-  if (!data) return <div className="ap-loading-wrap">Loading analytics...</div>;
+  if (!data) return <AnalyticsSkeleton />;
 
   const shortUrl = `${API_BASE_URL}/${data.shortCode}`;
 

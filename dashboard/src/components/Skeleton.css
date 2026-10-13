@@ -1,0 +1,133 @@
+/* ==========================================================================
+   Skeleton.css — Shimmer Loading States (Palette Aligned)
+   Palette: #086288 (Ocean), #4d8dba (Steel), #97d7ff (Sky), #ffefc4 (Cream)
+   ========================================================================== */
+
+.skeleton-shimmer {
+  background: linear-gradient(
+    90deg,
+    #e2e8f0 0%,
+    #f1f5f9 50%,
+    #e2e8f0 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmerFlow 1.6s ease-in-out infinite;
+  display: block;
+}
+
+@keyframes shimmerFlow {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* ── Full Page Boot Skeleton ── */
+.page-skeleton-screen {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #f8fafd;
+  color: #086288;
+  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+}
+
+.page-skeleton-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.page-skeleton-logo {
+  width: 48px;
+  height: 48px;
+  background: linear-gradient(135deg, #086288 0%, #4d8dba 100%);
+  color: #ffffff;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  box-shadow: 0 4px 20px rgba(8, 98, 136, 0.25);
+  animation: logoPulse 2s ease-in-out infinite;
+}
+
+@keyframes logoPulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 4px 20px rgba(8, 98, 136, 0.25);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 8px 28px rgba(8, 98, 136, 0.4);
+  }
+}
+
+.page-skeleton-bar-wrap {
+  width: 140px;
+  height: 4px;
+  background: rgba(8, 98, 136, 0.1);
+  border-radius: 999px;
+  overflow: hidden;
+  position: relative;
+}
+
+.page-skeleton-bar {
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(90deg, #086288, #4d8dba);
+  border-radius: 999px;
+  position: absolute;
+  animation: barProgress 1.4s ease-in-out infinite;
+}
+
+@keyframes barProgress {
+  0% {
+    left: -50%;
+  }
+  100% {
+    left: 100%;
+  }
+}
+
+.page-skeleton-text {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #526b7a;
+  letter-spacing: 0.02em;
+}
+
+/* ── Analytics Shimmer Skeleton ── */
+.analytics-skeleton-wrap {
+  animation: fadeInSkeleton 0.25s ease-out;
+}
+
+@keyframes fadeInSkeleton {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.skeleton-chart-bars {
+  height: 220px;
+  display: flex;
+  align-items: flex-end;
+  gap: 14px;
+  padding-top: 20px;
+}
+
+.skeleton-chart-bar-wrap {
+  flex: 1;
+  height: 100%;
+  display: flex;
+  align-items: flex-end;
+}
