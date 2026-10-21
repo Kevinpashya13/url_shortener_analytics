@@ -1,6 +1,6 @@
 <div align="center">
 
-# ScaleLink — URL Shortener & Real-Time Analytics Engine
+# KpShortLink — URL Shortener & Real-Time Analytics Engine
 
 A production-ready, high-throughput URL shortening service and real-time clickstream analytics platform built with **Node.js (Express)**, **React 19**, **PostgreSQL**, **Redis**, and **Docker Compose**.
 
@@ -23,7 +23,7 @@ A production-ready, high-throughput URL shortening service and real-time clickst
 
 Modern web applications require link shorteners that handle burst traffic with sub-millisecond latencies while collecting actionable clickstream data without blocking the user journey.
 
-**ScaleLink** delivers:
+**KpShortLink** delivers:
 - **Sub-5ms Redirect Latencies**: In-memory Redis cache-aside layer offloads up to 95% of database reads.
 - **Asynchronous Telemetry Logging**: User redirect executes immediately via HTTP `302 Found`, while geolocation, device parsing, and referrer aggregation happen in non-blocking background routines.
 - **Deterministic Collision-Free Encoding**: Custom Base62 algorithm mapping auto-incrementing 64-bit integer keys into 6-character URL slugs ($62^6 \approx 56.8 \text{ billion}$ unique URLs).
@@ -41,26 +41,26 @@ flowchart TD
     end
 
     subgraph Edge["Reverse Proxy & Static Delivery"]
-        Nginx["Nginx Web Server\n(Docker Frontend :80)"]
+        Nginx["Nginx Web Server<br/>(Docker Frontend :80)"]
     end
 
     subgraph AppCluster["Application Cluster"]
-        SPA["React 19 Dashboard\n(Vite + Tailwind CSS)"]
-        API["Express.js REST API\n(Node.js 20 LTS)"]
+        SPA["React 19 Dashboard<br/>(Vite + Tailwind CSS)"]
+        API["Express.js REST API<br/>(Node.js 20 LTS)"]
     end
 
     subgraph CacheData["Data & Caching Tier"]
-        Redis[("Redis In-Memory Store\n• URL Cache-Aside (TTL 24h)\n• Token Bucket Rate Limiter")]
-        Postgres[("PostgreSQL 16\n• URLs & Tier Gates\n• Clickstream Analytics (Prisma)")]
+        Redis[("Redis In-Memory Store<br/>URL Cache-Aside & Rate Limiter")]
+        Postgres[("PostgreSQL 16 Database<br/>URLs & Clickstream Analytics")]
     end
 
-    Browser -->|Serves UI / Assets| Nginx
+    Browser -->|"Serves UI & Assets"| Nginx
     Nginx --> SPA
-    SPA -->|RESTful Operations| API
-    Crawler -->|Redirect Request (/:code)| API
+    SPA -->|"RESTful Operations"| API
+    Crawler -->|"Redirect Request (/:code)"| API
 
-    API -->|1. Check Cache / Throttle| Redis
-    API -->|2. Read / Write Persistent Records| Postgres
+    API -->|"1. Check Cache / Throttle"| Redis
+    API -->|"2. Read / Write Data"| Postgres
 ```
 
 ---
@@ -106,14 +106,14 @@ sequenceDiagram
 
 ## Base62 Encoding Engine
 
-Rather than generating pseudo-random strings and querying the database in an expensive retry loop to avoid collisions, ScaleLink implements a **deterministic Base62 bijective conversion**:
+Rather than generating pseudo-random strings and querying the database in an expensive retry loop to avoid collisions, KpShortLink implements a **deterministic Base62 bijective conversion**:
 
 ```mermaid
 flowchart LR
-    ID["Database ID\n(e.g., 125,348)"] 
-    --> Mod["Modulo 62 Loop\n[0-9a-zA-Z] Alphabet"] 
-    --> Slug["Compact Slug\n(e.g., 'w9C')"]
-    --> PublicURL["Short URL\nhttps://s.id/w9C"]
+    ID["Database ID<br/>(e.g., 125,348)"] 
+    --> Mod["Modulo 62 Loop<br/>Alphabet: 0-9, a-z, A-Z"] 
+    --> Slug["Compact Slug<br/>(e.g., 'w9C')"]
+    --> PublicURL["Short URL<br/>https://s.id/w9C"]
 ```
 
 - **Collision probability**: `0.0%` (Guaranteed unique per primary key).

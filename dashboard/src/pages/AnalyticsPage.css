@@ -1,43 +1,214 @@
 /* ==========================================================================
-   AnalyticsPage.css — Precise layout matching DashboardPage visual theme
-   Complementing DashboardPage.css
-========================================================================== */
+   AnalyticsPage.css — Taste-Skill v2: Insights with Share Tables
+   ========================================================================== */
 
-/* Device Donut & Browser Card additions */
-.device-legend-row {
+.an-crumb-row {
   display: flex;
-  flex-wrap: wrap;
+  align-items: center;
   gap: 8px;
-  margin-top: 14px;
+  font-size: 13px;
+  margin-bottom: 20px;
 }
 
-.dev-pill {
+.an-back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: #6b6b6b;
+  text-decoration: none;
+}
+
+.an-back-link:hover {
+  color: #0a0a0a;
+}
+
+.an-crumb-separator {
+  color: #d4d4d4;
+}
+
+.an-crumb-current {
+  font-weight: 600;
+  color: #0a0a0a;
+}
+
+.an-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 32px;
+}
+
+.an-title {
+  font-size: 26px;
+  font-weight: 800;
+  margin: 0 0 6px;
+  letter-spacing: -0.02em;
+}
+
+.an-dest-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 13px;
+  color: #6b6b6b;
+  text-decoration: none;
+  max-width: 500px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.an-dest-link:hover {
+  color: #0a0a0a;
+  text-decoration: underline;
+}
+
+.an-header-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.an-action-btn {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  border-radius: 999px;
-  padding: 4px 10px;
-  font-size: 0.78rem;
-  transition: all 0.15s ease;
+  background: #ffffff;
+  border: 1px solid #e6e6e6;
+  border-radius: 6px;
+  padding: 8px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #0a0a0a;
+  cursor: pointer;
+  transition: background-color 0.12s ease;
 }
 
-.dev-pill.active {
-  background: #eff6ff;
-  border-color: #93c5fd;
+.an-action-btn:hover {
+  background: #f0f0f0;
 }
 
-.dev-badge {
-  font-size: 0.65rem;
+.an-section {
+  background: #ffffff;
+  border: 1px solid #e6e6e6;
+  border-radius: 8px;
+  padding: 24px;
+  margin-bottom: 28px;
 }
 
-.dev-count {
+.an-section-head {
+  margin-bottom: 20px;
+}
+
+.an-section-title {
+  font-size: 15px;
   font-weight: 700;
-  color: #0f172a;
+  margin: 0;
+  color: #0a0a0a;
 }
 
-.dev-name {
-  color: #64748b;
+.an-chart-container {
+  width: 100%;
+}
+
+/* ── 2 x 2 Share Tables ── */
+.an-grid-2x2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+
+.an-share-card {
+  background: #ffffff;
+  border: 1px solid #e6e6e6;
+  border-radius: 8px;
+  padding: 20px 24px;
+}
+
+.an-share-title {
+  font-size: 14px;
+  font-weight: 700;
+  margin: 0 0 16px;
+  color: #0a0a0a;
+}
+
+.an-share-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.an-share-row {
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 40px;
+  padding: 0 12px;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.an-share-bar {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  background-color: #f0f4f6;
+  z-index: 1;
+}
+
+.an-share-name {
+  position: relative;
+  z-index: 2;
+  font-size: 13px;
   font-weight: 500;
+  color: #0a0a0a;
+}
+
+.an-share-stats {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  gap: 16px;
+  font-variant-numeric: tabular-nums;
+}
+
+.an-share-pct {
+  font-size: 12px;
+  color: #6b6b6b;
+}
+
+.an-share-count {
+  font-size: 13px;
+  font-weight: 600;
+  color: #0a0a0a;
+}
+
+.an-locked-notice {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  background: #f8f8f8;
+  border-radius: 6px;
+  font-size: 13px;
+  color: #6b6b6b;
+}
+
+.an-locked-link {
+  font-weight: 600;
+  color: #0d7480;
+  text-decoration: none;
+}
+
+.an-empty-row {
+  font-size: 13px;
+  color: #8a8a8a;
+  padding: 8px 0;
+}
+
+@media (max-width: 800px) {
+  .an-grid-2x2 {
+    grid-template-columns: 1fr;
+  }
 }

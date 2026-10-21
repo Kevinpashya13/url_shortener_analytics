@@ -19,6 +19,26 @@
   --accent-sky: #97d7ff;
   --accent-cream: #ffefc4;
 
+  /* taste-skill v2 Tokens: Frost & Slate + Achromatic Ledger */
+  --bg-ground: #f7f9fa;
+  --bg-surface: #ffffff;
+  --bg-raised: #f0f4f6;
+  --border-subtle: #e2e8eb;
+  --border-strong: #cbd5e1;
+  --ink-primary: #1f3038;
+  --ink-muted: #5d6b72;
+  --ink-faint: #8a9ba3;
+  --accent-teal: #0d7480;
+  --accent-teal-hover: #0a5c66;
+  --accent-contrast: #ffffff;
+  --status-positive: #1b7a42;
+  --status-positive-bg: #eaf6ef;
+  --status-negative: #b3261e;
+  --status-negative-bg: #fdf2f2;
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+
   --shadow-sm: 0 1px 3px rgba(8, 98, 136, 0.06);
   --shadow-md: 0 4px 16px -2px rgba(8, 98, 136, 0.08), 0 2px 6px -1px rgba(0, 0, 0, 0.04);
   --shadow-lg: 0 12px 32px -4px rgba(8, 98, 136, 0.12), 0 4px 12px -2px rgba(0, 0, 0, 0.05);
