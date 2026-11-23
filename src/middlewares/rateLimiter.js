@@ -15,6 +15,7 @@ const shortenLimiter = rateLimit({
   message: { error: 'Too many requests, please try again later' },
   standardHeaders: true,
   legacyHeaders: false,
+  passOnStoreError: true,
 });
 
 // Rate limiter for authentication (login/register): 20 attempts / 15 minutes to prevent brute-force
@@ -30,6 +31,7 @@ const authLimiter = rateLimit({
   message: { error: 'Too many authentication attempts. Please try again after 15 minutes.' },
   standardHeaders: true,
   legacyHeaders: false,
+  passOnStoreError: true,
 });
 
 module.exports = { shortenLimiter, authLimiter };

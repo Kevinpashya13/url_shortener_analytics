@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Image } from 'lucide-react';
 import { loginUser } from '../api/auth';
 import { useAuth } from '../context/AuthContext';
 import './AuthPage.css';
@@ -9,18 +8,34 @@ export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setLoading(true);
+
     try {
       const res = await loginUser(email, password);
       login(res.data.token, res.data.user);
       navigate('/dashboard');
     } catch (err) {
-      setError(err.response?.data?.error || 'Login failed');
+      const status = err.response?.status;
+      const serverMessage = err.response?.data?.error;
+
+      if (status === 401 || serverMessage === 'Invalid email or password') {
+        setError('Email atau password yang Anda masukkan salah.');
+      } else if (status === 429) {
+        setError('Terlalu banyak percobaan login. Silakan coba lagi setelah 15 menit.');
+      } else if (!err.response) {
+        setError('Tidak dapat terhubung ke server backend. Pastikan server sedang berjalan.');
+      } else {
+        setError(serverMessage || 'Gagal masuk. Silakan coba beberapa saat lagi.');
+      }
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -64,8 +79,8 @@ export default function LoginPage() {
 
             {error && <p className="auth-error">{error}</p>}
 
-            <button type="submit" className="auth-submit-btn">
-              Sign In
+            <button type="submit" className="auth-submit-btn" disabled={loading}>
+              {loading ? 'Memproses...' : 'Sign In'}
             </button>
           </form>
 
@@ -76,9 +91,9 @@ export default function LoginPage() {
         </div>
       </div>
 
-      {/* Right: image placeholder */}
+      {/* Right: image side */}
       <div className="auth-image-side">
-        {<img src="../../public/login.svg" alt="" className="auth-image-fill" />}
+        <img src="/login.svg" alt="Login banner" className="auth-image-fill" />
       </div>
     </div>
   );

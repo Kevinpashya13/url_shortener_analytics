@@ -1,21 +1,20 @@
 {
- "url": "http://localhost:5174/",
- "at": "2026-10-21T07:42:42.255Z",
+ "url": "http://localhost:5174/dashboard",
+ "at": "2026-10-21T08:49:32.439Z",
  "allow": [],
  "viewports": [
   {
    "width": 1440,
    "height": 900,
    "load": "load",
-   "screens": 3,
+   "screens": 2,
    "filled": [
     1,
-    1,
-    0.98
+    1
    ],
    "motion": {
-    "elements": 13,
-    "css": 13,
+    "elements": 2,
+    "css": 2,
     "transitions": 0,
     "scripted": 0,
     "videos": 0,
@@ -27,26 +26,22 @@
      "h": 900
     },
     "page": {
-     "height": 2075,
-     "screens": 2.3,
-     "words": 183,
-     "img": 4,
+     "height": 904,
+     "screens": 1,
+     "words": 31,
+     "img": 1,
      "video": 0,
      "canvas": 0,
-     "svg": 6,
-     "sections": 4,
+     "svg": 1,
+     "sections": 0,
      "horizontalOverflow": 0,
      "overflowCulprits": [],
-     "uiFragments": 1,
+     "uiFragments": 0,
      "uiAbuse": false,
-     "realPictures": 3,
+     "realPictures": 0,
      "videoCount": 0,
-     "uiPictures": 1,
-     "pictureSamples": [
-      "feature-analytics-DFE1SEFp.jpg",
-      "feature-qrcode-CjDE5mLY.jpg",
-      "feature-branding-CTyLSAS_.jpg"
-     ],
+     "uiPictures": 0,
+     "pictureSamples": [],
      "blendText": 0,
      "sideScrollers": 0,
      "brokenImages": [],
@@ -54,215 +49,69 @@
      "videosNoPoster": 0
     },
     "hero": {
-     "text": "Precision short links. Real-time telemetry.",
-     "words": 5,
-     "chars": 43,
-     "lines": 2,
-     "size": 54.7,
-     "vw": 3.8,
+     "text": "Welcome back",
+     "words": 2,
+     "chars": 12,
+     "lines": 1,
+     "size": 25.6,
+     "vw": 1.8,
      "font": "Plus Jakarta Sans",
      "weight": 800,
-     "tracking": -0.04,
-     "leading": 1.05,
+     "tracking": -0.02,
+     "leading": 0.94,
      "upper": false,
      "italic": false,
      "mono": false,
      "align": "left",
      "position": "left",
-     "widthRatio": 0.44,
-     "top": 136,
+     "widthRatio": 0.26,
+     "top": 347,
      "tag": "h1",
      "kind": "heading"
     },
     "h1": {
-     "text": "Precision short links. Real-time telemetry.",
-     "words": 5,
-     "lines": 2,
-     "size": 54.7,
+     "text": "Welcome back",
+     "words": 2,
+     "lines": 1,
+     "size": 25.6,
      "font": "Plus Jakarta Sans"
     },
-    "headings": [
-     {
-      "text": "Precision short links. Real-time telemetry.",
-      "words": 5,
-      "chars": 43,
-      "lines": 2,
-      "size": 54.7,
-      "vw": 3.8,
-      "font": "Plus Jakarta Sans",
-      "weight": 800,
-      "tracking": -0.04,
-      "leading": 1.05,
-      "upper": false,
-      "italic": false,
-      "mono": false,
-      "align": "left",
-      "position": "left",
-      "widthRatio": 0.44,
-      "top": 136,
-      "tag": "h1",
-      "kind": "heading"
-     },
-     {
-      "text": "Engineered for low latency and telemetry precision.",
-      "words": 7,
-      "chars": 51,
-      "lines": 2,
-      "size": 31.7,
-      "vw": 2.2,
-      "font": "Plus Jakarta Sans",
-      "weight": 700,
-      "tracking": -0.02,
-      "leading": 1.2,
-      "upper": false,
-      "italic": false,
-      "mono": false,
-      "align": "left",
-      "position": "left",
-      "widthRatio": 0.45,
-      "top": 739,
-      "tag": "h2",
-      "kind": "heading"
-     },
-     {
-      "text": "1.2ms",
-      "words": 1,
-      "chars": 5,
-      "lines": 1,
-      "size": 32,
-      "vw": 2.2,
-      "font": "-apple-system",
-      "weight": 700,
-      "tracking": 0,
-      "leading": 0.75,
-      "upper": false,
-      "italic": false,
-      "mono": false,
-      "align": "left",
-      "position": "left",
-      "widthRatio": 0.25,
-      "top": 1275,
-      "tag": "span",
-      "kind": "heading"
-     },
-     {
-      "text": "99.98%",
-      "words": 1,
-      "chars": 6,
-      "lines": 1,
-      "size": 32,
-      "vw": 2.2,
-      "font": "-apple-system",
-      "weight": 700,
-      "tracking": 0,
-      "leading": 0.75,
-      "upper": false,
-      "italic": false,
-      "mono": false,
-      "align": "left",
-      "position": "center",
-      "widthRatio": 0.25,
-      "top": 1275,
-      "tag": "span",
-      "kind": "heading"
-     },
-     {
-      "text": "94.3%",
-      "words": 1,
-      "chars": 5,
-      "lines": 1,
-      "size": 32,
-      "vw": 2.2,
-      "font": "-apple-system",
-      "weight": 700,
-      "tracking": 0,
-      "leading": 0.75,
-      "upper": false,
-      "italic": false,
-      "mono": false,
-      "align": "left",
-      "position": "right",
-      "widthRatio": 0.25,
-      "top": 1275,
-      "tag": "span",
-      "kind": "heading"
-     },
-     {
-      "text": "KPShortLink",
-      "words": 1,
-      "chars": 11,
-      "lines": 1,
-      "size": 29.6,
-      "vw": 2.1,
-      "font": "-apple-system",
-      "weight": 900,
-      "tracking": -0.04,
-      "leading": 1,
-      "upper": false,
-      "italic": false,
-      "mono": false,
-      "align": "right",
-      "position": "right",
-      "widthRatio": 0.12,
-      "top": 1809,
-      "tag": "a",
-      "kind": "heading"
-     }
-    ],
+    "headings": [],
     "headingSummary": {
-     "count": 6,
-     "maxLines": 2,
+     "count": 0,
+     "maxLines": 0,
      "over2Lines": 0,
      "statements": 0,
      "centered": 0,
-     "medianWords": 1,
+     "medianWords": null,
      "mixedFontHeadings": 0
     },
     "type": {
      "families": [
       {
-       "family": "-apple-system",
-       "share": 0.86,
-       "mono": false
-      },
-      {
        "family": "Plus Jakarta Sans",
-       "share": 0.13,
-       "mono": false
-      },
-      {
-       "family": "Arial",
-       "share": 0.01,
+       "share": 1,
        "mono": false
       }
      ],
-     "familyCount": 3,
+     "familyCount": 1,
      "sizes": [
       13,
       14,
       15,
       16,
       17,
-      30,
-      32,
-      55
+      26
      ],
-     "sizeCount": 8,
+     "sizeCount": 6,
      "notLoaded": [],
-     "body": {
-      "font": "-apple-system",
-      "size": 16,
-      "leading": 1.55,
-      "weight": 400,
-      "tracking": 0,
-      "contrast": 12.9
-     },
-     "measureChars": 65,
+     "body": null,
+     "measureChars": null,
      "max": {
-      "size": 54.7,
-      "vw": 3.8,
+      "size": 25.6,
+      "vw": 1.8,
       "font": "Plus Jakarta Sans",
-      "text": "Precision short links.Real-time telemetr"
+      "text": "Welcome back"
      },
      "monoShare": 0,
      "monoProseShare": 0,
@@ -272,7 +121,7 @@
      "microLabelShare": 0,
      "microSamples": [],
      "upperShare": 0,
-     "centerShare": 0.01,
+     "centerShare": 0.26,
      "smallText": 0
     },
     "eyebrows": [],
@@ -287,44 +136,44 @@
      "dark": false,
      "sectionBgs": [
       {
-       "color": "#f7f9fa",
-       "top": 64,
-       "hsl": {
-        "h": 200,
-        "s": 0.23,
-        "l": 0.97
-       }
-      },
-      {
        "color": "#ffffff",
-       "top": 1175,
+       "top": 64,
        "hsl": {
         "h": 0,
         "s": 0,
         "l": 1
        }
+      },
+      {
+       "color": "#f1f7fa",
+       "top": 64,
+       "hsl": {
+        "h": 200,
+        "s": 0.47,
+        "l": 0.96
+       }
       }
      ],
      "textColors": [
       {
-       "color": "#1f3038",
-       "share": 0.48
-      },
-      {
-       "color": "#5d6b72",
-       "share": 0.43
-      },
-      {
        "color": "#086288",
-       "share": 0.05
+       "share": 0.29
+      },
+      {
+       "color": "#6b6b80",
+       "share": 0.22
       },
       {
        "color": "#475569",
-       "share": 0.02
+       "share": 0.15
       },
       {
        "color": "#ffffff",
-       "share": 0.02
+       "share": 0.13
+      },
+      {
+       "color": "#64748b",
+       "share": 0.13
       }
      ],
      "button": {
@@ -343,19 +192,21 @@
      "inHero": 2,
      "radius": 6,
      "height": 40,
-     "withShadow": 0,
+     "withShadow": 1,
      "withGradient": 0,
      "mono": 0,
      "upper": 0,
      "heroLabels": [
       "Get Started",
-      "Shorten"
+      "Sign In"
      ]
     },
     "surfaces": {
-     "shadowStatic": 0,
+     "shadowStatic": 1,
      "shadowOverlay": 0,
-     "shadowSamples": [],
+     "shadowSamples": [
+      "button.auth-submit-btn → rgba(8, 98, 136, 0.25) 0px 4px 12px 0px"
+     ],
      "gradients": 0,
      "scrims": 0,
      "gradientSamples": [],
@@ -365,22 +216,20 @@
      "outlinedBoxes": 0,
      "dashed": 0,
      "blurred": 0,
-     "roundedBoxes": 4,
-     "boxRadius": 8,
-     "squareMedia": 0,
-     "roundedMedia": 4,
-     "mediaRadius": 8,
+     "roundedBoxes": 0,
+     "boxRadius": 0,
+     "squareMedia": 1,
+     "roundedMedia": 0,
+     "mediaRadius": 0,
      "textShadow": 0,
-     "cardRows": [
-      {
-       "count": 3,
-       "iconTopped": false,
-       "rounded": true,
-       "top": 417
-      }
-     ]
+     "cardRows": []
     },
-    "heroMedia": [],
+    "heroMedia": [
+     {
+      "type": "img",
+      "ratio": 0.44
+     }
+    ],
     "nav": {
      "links": 6,
      "fixed": true,
@@ -397,151 +246,39 @@
      "w": 1440,
      "h": 900
     },
-    "pageH": 2075,
+    "pageH": 904,
     "margins": {
-     "left": 74,
-     "right": 120
+     "left": 39,
+     "right": 0
     },
-    "sections": [
-     {
-      "sel": "section.lp-hero",
-      "tag": "section",
-      "top": 64,
-      "height": 305,
-      "words": 22,
-      "media": 0,
-      "middle": 165,
-      "heading": {
-       "text": "Precision short links.",
-       "size": 55,
-       "tag": "h1"
-      },
-      "left": 120,
-      "right": 126,
-      "textLeft": 120,
-      "textRight": 173,
-      "fullBleed": false,
-      "footer": false,
-      "hero": true,
-      "continues": true,
-      "pinned": false
-     },
-     {
-      "sel": "section.lp-gallery",
-      "tag": "section",
-      "top": 417,
-      "height": 258,
-      "words": 15,
-      "media": 3,
-      "middle": 24,
-      "heading": null,
-      "left": 120,
-      "right": 120,
-      "textLeft": 136,
-      "textRight": 252,
-      "fullBleed": false,
-      "footer": false,
-      "hero": true,
-      "continues": true,
-      "pinned": false
-     },
-     {
-      "sel": "section.lp-capabilities",
-      "tag": "section",
-      "top": 739,
-      "height": 372,
-      "words": 69,
-      "media": 0,
-      "middle": 0,
-      "heading": {
-       "text": "Engineered for low latency and telemetry precision",
-       "size": 32,
-       "tag": "h2"
-      },
-      "left": 120,
-      "right": 332,
-      "textLeft": 120,
-      "textRight": 332,
-      "fullBleed": false,
-      "footer": false,
-      "hero": false,
-      "continues": true,
-      "pinned": false
-     },
-     {
-      "sel": "section.lp-interface-stage",
-      "tag": "section",
-      "top": 1175,
-      "height": 452,
-      "words": 18,
-      "media": 1,
-      "middle": 0,
-      "heading": {
-       "text": "1.2ms",
-       "size": 32,
-       "tag": "span"
-      },
-      "left": 152,
-      "right": 152,
-      "textLeft": 152,
-      "textRight": 152,
-      "fullBleed": false,
-      "footer": false,
-      "hero": false,
-      "continues": true,
-      "pinned": false
-     },
-     {
-      "sel": "footer.site-footer",
-      "tag": "footer",
-      "top": 1707,
-      "height": 368,
-      "words": 60,
-      "media": 0,
-      "middle": 179,
-      "heading": {
-       "text": "KPShortLink",
-       "size": 30,
-       "tag": "a"
-      },
-      "left": 160,
-      "right": 160,
-      "textLeft": 160,
-      "textRight": 160,
-      "fullBleed": false,
-      "footer": true,
-      "hero": false,
-      "continues": false,
-      "pinned": false
-     }
-    ],
+    "sections": [],
     "gaps": [],
     "h1s": [
      {
-      "text": "Precision short links. Real-time telemetry.",
-      "size": 55,
-      "top": 136,
+      "text": "Welcome back",
+      "size": 26,
+      "top": 347,
       "firstScreen": true
      }
     ],
     "edgeText": [],
     "edges": [
      {
-      "x": 120,
-      "n": 4
+      "x": 190,
+      "n": 1
      }
     ],
-    "leftBlocks": 4,
+    "leftBlocks": 1,
     "bodySize": 16,
     "stage": false,
-    "explains": true,
+    "explains": false,
     "slivers": [],
-    "voidShare": 0.09,
+    "voidShare": 0.11,
     "voidBox": {
-     "x": 780,
-     "y": 660,
-     "w": 660,
-     "h": 180
+     "x": 0,
+     "y": 120,
+     "w": 180,
+     "h": 780
     }
    },
    "app": null,
@@ -551,16 +288,14 @@
    "width": 768,
    "height": 1024,
    "load": "load",
-   "screens": 4,
+   "screens": 2,
    "filled": [
     1,
-    1,
-    0.98,
-    0.98
+    1
    ],
    "motion": {
-    "elements": 11,
-    "css": 11,
+    "elements": 2,
+    "css": 2,
     "transitions": 0,
     "scripted": 0,
     "videos": 0,
@@ -572,26 +307,22 @@
      "h": 1024
     },
     "page": {
-     "height": 3295,
-     "screens": 3.2,
-     "words": 176,
-     "img": 4,
+     "height": 1028,
+     "screens": 1,
+     "words": 24,
+     "img": 1,
      "video": 0,
      "canvas": 0,
-     "svg": 6,
-     "sections": 4,
+     "svg": 1,
+     "sections": 0,
      "horizontalOverflow": 0,
      "overflowCulprits": [],
-     "uiFragments": 1,
+     "uiFragments": 0,
      "uiAbuse": false,
-     "realPictures": 3,
+     "realPictures": 0,
      "videoCount": 0,
-     "uiPictures": 1,
-     "pictureSamples": [
-      "feature-analytics-DFE1SEFp.jpg",
-      "feature-qrcode-CjDE5mLY.jpg",
-      "feature-branding-CTyLSAS_.jpg"
-     ],
+     "uiPictures": 0,
+     "pictureSamples": [],
      "blendText": 0,
      "sideScrollers": 0,
      "brokenImages": [],
@@ -599,194 +330,69 @@
      "videosNoPoster": 0
     },
     "hero": {
-     "text": "Precision short links. Real-time telemetry.",
-     "words": 5,
-     "chars": 43,
-     "lines": 2,
-     "size": 35.2,
-     "vw": 4.6,
+     "text": "Welcome back",
+     "words": 2,
+     "chars": 12,
+     "lines": 1,
+     "size": 25.6,
+     "vw": 3.3,
      "font": "Plus Jakarta Sans",
      "weight": 800,
-     "tracking": -0.04,
-     "leading": 1.05,
+     "tracking": -0.02,
+     "leading": 0.94,
      "upper": false,
      "italic": false,
      "mono": false,
      "align": "left",
      "position": "center",
-     "widthRatio": 0.95,
-     "top": 136,
+     "widthRatio": 0.49,
+     "top": 409,
      "tag": "h1",
      "kind": "heading"
     },
     "h1": {
-     "text": "Precision short links. Real-time telemetry.",
-     "words": 5,
-     "lines": 2,
-     "size": 35.2,
+     "text": "Welcome back",
+     "words": 2,
+     "lines": 1,
+     "size": 25.6,
      "font": "Plus Jakarta Sans"
     },
-    "headings": [
-     {
-      "text": "Precision short links. Real-time telemetry.",
-      "words": 5,
-      "chars": 43,
-      "lines": 2,
-      "size": 35.2,
-      "vw": 4.6,
-      "font": "Plus Jakarta Sans",
-      "weight": 800,
-      "tracking": -0.04,
-      "leading": 1.05,
-      "upper": false,
-      "italic": false,
-      "mono": false,
-      "align": "left",
-      "position": "center",
-      "widthRatio": 0.95,
-      "top": 136,
-      "tag": "h1",
-      "kind": "heading"
-     },
-     {
-      "text": "1.2ms",
-      "words": 1,
-      "chars": 5,
-      "lines": 1,
-      "size": 32,
-      "vw": 4.2,
-      "font": "-apple-system",
-      "weight": 700,
-      "tracking": 0,
-      "leading": 0.75,
-      "upper": false,
-      "italic": false,
-      "mono": false,
-      "align": "left",
-      "position": "center",
-      "widthRatio": 0.86,
-      "top": 1962,
-      "tag": "span",
-      "kind": "heading"
-     },
-     {
-      "text": "99.98%",
-      "words": 1,
-      "chars": 6,
-      "lines": 1,
-      "size": 32,
-      "vw": 4.2,
-      "font": "-apple-system",
-      "weight": 700,
-      "tracking": 0,
-      "leading": 0.75,
-      "upper": false,
-      "italic": false,
-      "mono": false,
-      "align": "left",
-      "position": "center",
-      "widthRatio": 0.86,
-      "top": 2030,
-      "tag": "span",
-      "kind": "heading"
-     },
-     {
-      "text": "94.3%",
-      "words": 1,
-      "chars": 5,
-      "lines": 1,
-      "size": 32,
-      "vw": 4.2,
-      "font": "-apple-system",
-      "weight": 700,
-      "tracking": 0,
-      "leading": 0.75,
-      "upper": false,
-      "italic": false,
-      "mono": false,
-      "align": "left",
-      "position": "center",
-      "widthRatio": 0.86,
-      "top": 2098,
-      "tag": "span",
-      "kind": "heading"
-     },
-     {
-      "text": "KPShortLink",
-      "words": 1,
-      "chars": 11,
-      "lines": 1,
-      "size": 29.6,
-      "vw": 3.9,
-      "font": "-apple-system",
-      "weight": 900,
-      "tracking": -0.04,
-      "leading": 1,
-      "upper": false,
-      "italic": false,
-      "mono": false,
-      "align": "left",
-      "position": "left",
-      "widthRatio": 0.22,
-      "top": 3152,
-      "tag": "a",
-      "kind": "heading"
-     }
-    ],
+    "headings": [],
     "headingSummary": {
-     "count": 5,
-     "maxLines": 2,
+     "count": 0,
+     "maxLines": 0,
      "over2Lines": 0,
      "statements": 0,
      "centered": 0,
-     "medianWords": 1,
+     "medianWords": null,
      "mixedFontHeadings": 0
     },
     "type": {
      "families": [
       {
-       "family": "-apple-system",
-       "share": 0.89,
-       "mono": false
-      },
-      {
        "family": "Plus Jakarta Sans",
-       "share": 0.11,
-       "mono": false
-      },
-      {
-       "family": "Arial",
-       "share": 0.01,
+       "share": 1,
        "mono": false
       }
      ],
-     "familyCount": 3,
+     "familyCount": 1,
      "sizes": [
       13,
       14,
       15,
       16,
       17,
-      22,
-      30,
-      35
+      26
      ],
-     "sizeCount": 8,
+     "sizeCount": 6,
      "notLoaded": [],
-     "body": {
-      "font": "-apple-system",
-      "size": 16,
-      "leading": 1.55,
-      "weight": 400,
-      "tracking": 0,
-      "contrast": 12.9
-     },
-     "measureChars": 65,
+     "body": null,
+     "measureChars": null,
      "max": {
-      "size": 35.2,
-      "vw": 4.6,
+      "size": 25.6,
+      "vw": 3.3,
       "font": "Plus Jakarta Sans",
-      "text": "Precision short links.Real-time telemetr"
+      "text": "Welcome back"
      },
      "monoShare": 0,
      "monoProseShare": 0,
@@ -796,7 +402,7 @@
      "microLabelShare": 0,
      "microSamples": [],
      "upperShare": 0,
-     "centerShare": 0.01,
+     "centerShare": 0.34,
      "smallText": 0
     },
     "eyebrows": [],
@@ -811,17 +417,8 @@
      "dark": false,
      "sectionBgs": [
       {
-       "color": "#f7f9fa",
-       "top": 64,
-       "hsl": {
-        "h": 200,
-        "s": 0.23,
-        "l": 0.97
-       }
-      },
-      {
        "color": "#ffffff",
-       "top": 1862,
+       "top": 64,
        "hsl": {
         "h": 0,
         "s": 0,
@@ -831,32 +428,32 @@
      ],
      "textColors": [
       {
-       "color": "#1f3038",
-       "share": 0.5
-      },
-      {
-       "color": "#5d6b72",
-       "share": 0.44
-      },
-      {
        "color": "#086288",
-       "share": 0.05
+       "share": 0.37
       },
       {
-       "color": "#1b7a42",
-       "share": 0.01
+       "color": "#6b6b80",
+       "share": 0.27
+      },
+      {
+       "color": "#64748b",
+       "share": 0.17
+      },
+      {
+       "color": "#374151",
+       "share": 0.1
       },
       {
        "color": "#ffffff",
-       "share": 0.01
+       "share": 0.08
       }
      ],
      "button": {
-      "bg": "#1f3038",
+      "bg": "#086288",
       "hsl": {
-       "h": 199,
-       "s": 0.29,
-       "l": 0.17
+       "h": 198,
+       "s": 0.89,
+       "l": 0.28
       },
       "fg": "#ffffff"
      },
@@ -865,20 +462,22 @@
     "buttons": {
      "count": 1,
      "inHero": 1,
-     "radius": 4,
+     "radius": 8,
      "height": 42,
-     "withShadow": 0,
+     "withShadow": 1,
      "withGradient": 0,
      "mono": 0,
      "upper": 0,
      "heroLabels": [
-      "Shorten"
+      "Sign In"
      ]
     },
     "surfaces": {
-     "shadowStatic": 0,
+     "shadowStatic": 1,
      "shadowOverlay": 0,
-     "shadowSamples": [],
+     "shadowSamples": [
+      "button.auth-submit-btn → rgba(8, 98, 136, 0.25) 0px 4px 12px 0px"
+     ],
      "gradients": 0,
      "scrims": 0,
      "gradientSamples": [],
@@ -888,24 +487,15 @@
      "outlinedBoxes": 0,
      "dashed": 0,
      "blurred": 0,
-     "roundedBoxes": 4,
-     "boxRadius": 8,
+     "roundedBoxes": 0,
+     "boxRadius": 0,
      "squareMedia": 0,
-     "roundedMedia": 4,
-     "mediaRadius": 8,
+     "roundedMedia": 0,
+     "mediaRadius": 0,
      "textShadow": 0,
      "cardRows": []
     },
-    "heroMedia": [
-     {
-      "type": "img",
-      "ratio": 0.19
-     },
-     {
-      "type": "img",
-      "ratio": 0.19
-     }
-    ],
+    "heroMedia": [],
     "nav": {
      "links": 1,
      "fixed": true,
@@ -922,141 +512,29 @@
      "w": 768,
      "h": 1024
     },
-    "pageH": 3295,
+    "pageH": 1028,
     "margins": {
-     "left": 20,
+     "left": 27,
      "right": 20
     },
-    "sections": [
-     {
-      "sel": "section.lp-hero",
-      "tag": "section",
-      "top": 64,
-      "height": 350,
-      "words": 22,
-      "media": 0,
-      "middle": 0,
-      "heading": {
-       "text": "Precision short links.",
-       "size": 35,
-       "tag": "h1"
-      },
-      "left": 20,
-      "right": 26,
-      "textLeft": 20,
-      "textRight": 73,
-      "fullBleed": false,
-      "footer": false,
-      "hero": true,
-      "continues": true,
-      "pinned": false
-     },
-     {
-      "sel": "section.lp-gallery",
-      "tag": "section",
-      "top": 462,
-      "height": 822,
-      "words": 15,
-      "media": 3,
-      "middle": 0,
-      "heading": null,
-      "left": 20,
-      "right": 20,
-      "textLeft": 36,
-      "textRight": 486,
-      "fullBleed": false,
-      "footer": false,
-      "hero": true,
-      "continues": true,
-      "pinned": false
-     },
-     {
-      "sel": "section.lp-capabilities",
-      "tag": "section",
-      "top": 1348,
-      "height": 451,
-      "words": 69,
-      "media": 0,
-      "middle": 0,
-      "heading": {
-       "text": "Engineered for low latency and telemetry precision",
-       "size": 22,
-       "tag": "h2"
-      },
-      "left": 20,
-      "right": 64,
-      "textLeft": 20,
-      "textRight": 64,
-      "fullBleed": false,
-      "footer": false,
-      "hero": false,
-      "continues": true,
-      "pinned": false
-     },
-     {
-      "sel": "section.lp-interface-stage",
-      "tag": "section",
-      "top": 1862,
-      "height": 588,
-      "words": 18,
-      "media": 1,
-      "middle": 0,
-      "heading": {
-       "text": "1.2ms",
-       "size": 32,
-       "tag": "span"
-      },
-      "left": 52,
-      "right": 52,
-      "textLeft": 52,
-      "textRight": 52,
-      "fullBleed": false,
-      "footer": false,
-      "hero": false,
-      "continues": true,
-      "pinned": false
-     },
-     {
-      "sel": "footer.site-footer",
-      "tag": "footer",
-      "top": 2510,
-      "height": 784,
-      "words": 60,
-      "media": 0,
-      "middle": 19,
-      "heading": {
-       "text": "Features",
-       "size": 17,
-       "tag": "h4"
-      },
-      "left": 40,
-      "right": 391,
-      "textLeft": 40,
-      "textRight": 391,
-      "fullBleed": false,
-      "footer": true,
-      "hero": false,
-      "continues": false,
-      "pinned": false
-     }
-    ],
+    "sections": [],
     "gaps": [],
     "h1s": [
      {
-      "text": "Precision short links. Real-time telemetry.",
-      "size": 35,
-      "top": 136,
+      "text": "Welcome back",
+      "size": 26,
+      "top": 409,
       "firstScreen": true
      }
     ],
     "edgeText": [],
     "edges": [
      {
-      "x": 20,
-      "n": 4
+      "x": 194,
+      "n": 1
      }
     ],
-    "leftBlocks": 4,
+    "leftBlocks": 1,
     "bodySize": 16,
     "stage": false,
     "explains": false,
@@ -1071,17 +549,14 @@
    "width": 390,
    "height": 844,
    "load": "load",
-   "screens": 5,
+   "screens": 2,
    "filled": [
     1,
-    1,
-    1,
-    0.96,
-    0.97
+    1
    ],
    "motion": {
-    "elements": 13,
-    "css": 13,
+    "elements": 2,
+    "css": 2,
     "transitions": 0,
     "scripted": 0,
     "videos": 0,
@@ -1093,26 +568,22 @@
      "h": 844
     },
     "page": {
-     "height": 3998,
-     "screens": 4.7,
-     "words": 176,
-     "img": 4,
+     "height": 848,
+     "screens": 1,
+     "words": 24,
+     "img": 1,
      "video": 0,
      "canvas": 0,
-     "svg": 6,
-     "sections": 4,
+     "svg": 1,
+     "sections": 0,
      "horizontalOverflow": 0,
      "overflowCulprits": [],
-     "uiFragments": 1,
+     "uiFragments": 0,
      "uiAbuse": false,
-     "realPictures": 3,
+     "realPictures": 0,
      "videoCount": 0,
-     "uiPictures": 1,
-     "pictureSamples": [
-      "feature-analytics-DFE1SEFp.jpg",
-      "feature-qrcode-CjDE5mLY.jpg",
-      "feature-branding-CTyLSAS_.jpg"
-     ],
+     "uiPictures": 0,
+     "pictureSamples": [],
      "blendText": 0,
      "sideScrollers": 0,
      "brokenImages": [],
@@ -1120,215 +591,91 @@
      "videosNoPoster": 0
     },
     "hero": {
-     "text": "Precision short links. Real-time telemetry.",
-     "words": 5,
-     "chars": 43,
-     "lines": 2,
-     "size": 35.2,
-     "vw": 9,
+     "text": "Welcome back",
+     "words": 2,
+     "chars": 12,
+     "lines": 1,
+     "size": 25.6,
+     "vw": 6.6,
      "font": "Plus Jakarta Sans",
      "weight": 800,
-     "tracking": -0.04,
-     "leading": 1.05,
+     "tracking": -0.02,
+     "leading": 0.94,
      "upper": false,
      "italic": false,
      "mono": false,
      "align": "left",
      "position": "center",
-     "widthRatio": 0.94,
-     "top": 136,
+     "widthRatio": 0.88,
+     "top": 319,
      "tag": "h1",
      "kind": "heading"
     },
     "h1": {
-     "text": "Precision short links. Real-time telemetry.",
-     "words": 5,
-     "lines": 2,
-     "size": 35.2,
+     "text": "Welcome back",
+     "words": 2,
+     "lines": 1,
+     "size": 25.6,
      "font": "Plus Jakarta Sans"
     },
     "headings": [
      {
-      "text": "Precision short links. Real-time telemetry.",
-      "words": 5,
-      "chars": 43,
-      "lines": 2,
-      "size": 35.2,
-      "vw": 9,
+      "text": "Welcome back",
+      "words": 2,
+      "chars": 12,
+      "lines": 1,
+      "size": 25.6,
+      "vw": 6.6,
       "font": "Plus Jakarta Sans",
       "weight": 800,
-      "tracking": -0.04,
-      "leading": 1.05,
-      "upper": false,
-      "italic": false,
-      "mono": false,
-      "align": "left",
-      "position": "center",
-      "widthRatio": 0.94,
-      "top": 136,
-      "tag": "h1",
-      "kind": "heading"
-     },
-     {
-      "text": "Engineered for low latency and telemetry precision.",
-      "words": 7,
-      "chars": 51,
-      "lines": 2,
-      "size": 22.4,
-      "vw": 5.7,
-      "font": "Plus Jakarta Sans",
-      "weight": 700,
       "tracking": -0.02,
-      "leading": 1.2,
+      "leading": 0.94,
       "upper": false,
       "italic": false,
       "mono": false,
       "align": "left",
       "position": "center",
-      "widthRatio": 0.9,
-      "top": 1372,
-      "tag": "h2",
-      "kind": "heading"
-     },
-     {
-      "text": "1.2ms",
-      "words": 1,
-      "chars": 5,
-      "lines": 1,
-      "size": 32,
-      "vw": 8.2,
-      "font": "-apple-system",
-      "weight": 700,
-      "tracking": 0,
-      "leading": 0.75,
-      "upper": false,
-      "italic": false,
-      "mono": false,
-      "align": "left",
-      "position": "center",
-      "widthRatio": 0.73,
-      "top": 2230,
-      "tag": "span",
-      "kind": "heading"
-     },
-     {
-      "text": "99.98%",
-      "words": 1,
-      "chars": 6,
-      "lines": 1,
-      "size": 32,
-      "vw": 8.2,
-      "font": "-apple-system",
-      "weight": 700,
-      "tracking": 0,
-      "leading": 0.75,
-      "upper": false,
-      "italic": false,
-      "mono": false,
-      "align": "left",
-      "position": "center",
-      "widthRatio": 0.73,
-      "top": 2298,
-      "tag": "span",
-      "kind": "heading"
-     },
-     {
-      "text": "94.3%",
-      "words": 1,
-      "chars": 5,
-      "lines": 1,
-      "size": 32,
-      "vw": 8.2,
-      "font": "-apple-system",
-      "weight": 700,
-      "tracking": 0,
-      "leading": 0.75,
-      "upper": false,
-      "italic": false,
-      "mono": false,
-      "align": "left",
-      "position": "center",
-      "widthRatio": 0.73,
-      "top": 2366,
-      "tag": "span",
-      "kind": "heading"
-     },
-     {
-      "text": "KPShortLink",
-      "words": 1,
-      "chars": 11,
-      "lines": 1,
-      "size": 29.6,
-      "vw": 7.6,
-      "font": "-apple-system",
-      "weight": 900,
-      "tracking": -0.04,
-      "leading": 1,
-      "upper": false,
-      "italic": false,
-      "mono": false,
-      "align": "left",
-      "position": "left",
-      "widthRatio": 0.43,
-      "top": 3856,
-      "tag": "a",
+      "widthRatio": 0.88,
+      "top": 319,
+      "tag": "h1",
       "kind": "heading"
      }
     ],
     "headingSummary": {
-     "count": 6,
-     "maxLines": 2,
+     "count": 1,
+     "maxLines": 1,
      "over2Lines": 0,
      "statements": 0,
      "centered": 0,
-     "medianWords": 1,
+     "medianWords": null,
      "mixedFontHeadings": 0
     },
     "type": {
      "families": [
       {
-       "family": "-apple-system",
-       "share": 0.89,
-       "mono": false
-      },
-      {
        "family": "Plus Jakarta Sans",
-       "share": 0.11,
-       "mono": false
-      },
-      {
-       "family": "Arial",
-       "share": 0.01,
+       "share": 1,
        "mono": false
       }
      ],
-     "familyCount": 3,
+     "familyCount": 1,
      "sizes": [
       13,
       14,
       15,
       16,
       17,
-      22,
-      30,
-      35
+      26
      ],
-     "sizeCount": 8,
+     "sizeCount": 6,
      "notLoaded": [],
-     "body": {
-      "font": "-apple-system",
-      "size": 16,
-      "leading": 1.55,
-      "weight": 400,
-      "tracking": 0,
-      "contrast": 12.9
-     },
-     "measureChars": 46,
+     "body": null,
+     "measureChars": null,
      "max": {
-      "size": 35.2,
-      "vw": 9,
+      "size": 25.6,
+      "vw": 6.6,
       "font": "Plus Jakarta Sans",
-      "text": "Precision short links.Real-time telemetr"
+      "text": "Welcome back"
      },
      "monoShare": 0,
      "monoProseShare": 0,
@@ -1338,7 +685,7 @@
      "microLabelShare": 0,
      "microSamples": [],
      "upperShare": 0,
-     "centerShare": 0.01,
+     "centerShare": 0.34,
      "smallText": 0
     },
     "eyebrows": [],
@@ -1353,17 +700,8 @@
      "dark": false,
      "sectionBgs": [
       {
-       "color": "#f7f9fa",
-       "top": 64,
-       "hsl": {
-        "h": 200,
-        "s": 0.23,
-        "l": 0.97
-       }
-      },
-      {
        "color": "#ffffff",
-       "top": 2106,
+       "top": 64,
        "hsl": {
         "h": 0,
         "s": 0,
@@ -1373,32 +711,32 @@
      ],
      "textColors": [
       {
-       "color": "#1f3038",
-       "share": 0.5
-      },
-      {
-       "color": "#5d6b72",
-       "share": 0.44
-      },
-      {
        "color": "#086288",
-       "share": 0.05
+       "share": 0.37
       },
       {
-       "color": "#1b7a42",
-       "share": 0.01
+       "color": "#6b6b80",
+       "share": 0.27
+      },
+      {
+       "color": "#64748b",
+       "share": 0.17
+      },
+      {
+       "color": "#374151",
+       "share": 0.1
       },
       {
        "color": "#ffffff",
-       "share": 0.01
+       "share": 0.08
       }
      ],
      "button": {
-      "bg": "#1f3038",
+      "bg": "#086288",
       "hsl": {
-       "h": 199,
-       "s": 0.29,
-       "l": 0.17
+       "h": 198,
+       "s": 0.89,
+       "l": 0.28
       },
       "fg": "#ffffff"
      },
@@ -1407,20 +745,22 @@
     "buttons": {
      "count": 1,
      "inHero": 1,
-     "radius": 4,
+     "radius": 8,
      "height": 42,
-     "withShadow": 0,
+     "withShadow": 1,
      "withGradient": 0,
      "mono": 0,
      "upper": 0,
      "heroLabels": [
-      "Shorten"
+      "Sign In"
      ]
     },
     "surfaces": {
-     "shadowStatic": 0,
+     "shadowStatic": 1,
      "shadowOverlay": 0,
-     "shadowSamples": [],
+     "shadowSamples": [
+      "button.auth-submit-btn → rgba(8, 98, 136, 0.25) 0px 4px 12px 0px"
+     ],
      "gradients": 0,
      "scrims": 0,
      "gradientSamples": [],
@@ -1430,33 +770,15 @@
      "outlinedBoxes": 0,
      "dashed": 0,
      "blurred": 0,
-     "roundedBoxes": 4,
-     "boxRadius": 8,
+     "roundedBoxes": 0,
+     "boxRadius": 0,
      "squareMedia": 0,
-     "roundedMedia": 4,
-     "mediaRadius": 8,
+     "roundedMedia": 0,
+     "mediaRadius": 0,
      "textShadow": 0,
-     "cardRows": [
-      {
-       "count": 3,
-       "iconTopped": false,
-       "rounded": true,
-       "top": 486
-      },
-      {
-       "count": 4,
-       "iconTopped": false,
-       "rounded": false,
-       "top": 1458
-      }
-     ]
+     "cardRows": []
     },
-    "heroMedia": [
-     {
-      "type": "img",
-      "ratio": 0.22
-     }
-    ],
+    "heroMedia": [],
     "nav": {
      "links": 1,
      "fixed": true,
@@ -1473,141 +795,29 @@
      "w": 390,
      "h": 844
     },
-    "pageH": 3998,
+    "pageH": 848,
     "margins": {
-     "left": 20,
+     "left": 24,
      "right": 20
     },
-    "sections": [
-     {
-      "sel": "section.lp-hero",
-      "tag": "section",
-      "top": 64,
-      "height": 374,
-      "words": 22,
-      "media": 0,
-      "middle": 0,
-      "heading": {
-       "text": "Precision short links.",
-       "size": 35,
-       "tag": "h1"
-      },
-      "left": 20,
-      "right": 9,
-      "textLeft": 20,
-      "textRight": 27,
-      "fullBleed": false,
-      "footer": false,
-      "hero": true,
-      "continues": true,
-      "pinned": false
-     },
-     {
-      "sel": "section.lp-gallery",
-      "tag": "section",
-      "top": 486,
-      "height": 822,
-      "words": 15,
-      "media": 3,
-      "middle": 0,
-      "heading": null,
-      "left": 20,
-      "right": 20,
-      "textLeft": 36,
-      "textRight": 108,
-      "fullBleed": false,
-      "footer": false,
-      "hero": false,
-      "continues": true,
-      "pinned": false
-     },
-     {
-      "sel": "section.lp-capabilities",
-      "tag": "section",
-      "top": 1372,
-      "height": 670,
-      "words": 69,
-      "media": 0,
-      "middle": 0,
-      "heading": {
-       "text": "Engineered for low latency and telemetry precision",
-       "size": 22,
-       "tag": "h2"
-      },
-      "left": 20,
-      "right": 48,
-      "textLeft": 20,
-      "textRight": 48,
-      "fullBleed": false,
-      "footer": false,
-      "hero": false,
-      "continues": true,
-      "pinned": false
-     },
-     {
-      "sel": "section.lp-interface-stage",
-      "tag": "section",
-      "top": 2106,
-      "height": 612,
-      "words": 18,
-      "media": 1,
-      "middle": 0,
-      "heading": {
-       "text": "1.2ms",
-       "size": 32,
-       "tag": "span"
-      },
-      "left": 52,
-      "right": 52,
-      "textLeft": 52,
-      "textRight": 52,
-      "fullBleed": false,
-      "footer": false,
-      "hero": false,
-      "continues": true,
-      "pinned": false
-     },
-     {
-      "sel": "footer.site-footer",
-      "tag": "footer",
-      "top": 2778,
-      "height": 1220,
-      "words": 60,
-      "media": 0,
-      "middle": 0,
-      "heading": {
-       "text": "Features",
-       "size": 17,
-       "tag": "h4"
-      },
-      "left": 24,
-      "right": 199,
-      "textLeft": 24,
-      "textRight": 199,
-      "fullBleed": false,
-      "footer": true,
-      "hero": false,
-      "continues": false,
-      "pinned": false
-     }
-    ],
+    "sections": [],
     "gaps": [],
     "h1s": [
      {
-      "text": "Precision short links. Real-time telemetry.",
-      "size": 35,
-      "top": 136,
+      "text": "Welcome back",
+      "size": 26,
+      "top": 319,
       "firstScreen": true
      }
     ],
     "edgeText": [],
     "edges": [
      {
-      "x": 20,
-      "n": 4
+      "x": 24,
+      "n": 1
      }
     ],
-    "leftBlocks": 4,
+    "leftBlocks": 1,
     "bodySize": 16,
     "stage": false,
     "explains": false,
@@ -1621,6 +831,35 @@
  ],
  "findings": [
   {
+   "level": "FAIL",
+   "id": "shadow",
+   "width": 1440,
+   "message": "1 box-shadow(s) on elements at rest: button.auth-submit-btn → rgba(8, 98, 136, 0.25) 0px 4px 12px 0px",
+   "fix": "Remove. Separate surfaces with a tone step or space. Shadows are for things that really float (menus, dialogs, sticky bars).",
+   "alsoAt": [
+    768,
+    390
+   ]
+  },
+  {
+   "level": "FAIL",
+   "id": "button-fx",
+   "width": 1440,
+   "message": "Buttons with shadow/glow.",
+   "fix": "Flat fill, one colour.",
+   "alsoAt": [
+    768,
+    390
+   ]
+  },
+  {
+   "level": "FAIL",
+   "id": "few-pictures",
+   "width": 1440,
+   "message": "Only 0 picture(s) on the page (0 photographs, footage or raster images, 0 interface fragments). Drawings in SVG do not count.",
+   "fix": "Find real pictures of the subject's world with scripts/assets.mjs (photographs, archival images, maps, engravings, footage), download them to assets/ and give them room: a hero picture, one per section that has a subject, a full-width band. At least four, usually six to twelve."
+  },
+  {
    "level": "WARN",
    "id": "no-footage",
    "width": 1440,
@@ -1631,29 +870,50 @@
    "level": "WARN",
    "id": "font-not-dealt",
    "width": 1440,
-   "message": "The sheet dealt Chivo and Chivo, but the page renders -apple-system, Plus Jakarta Sans.",
+   "message": "The sheet dealt Chivo and Chivo, but the page renders Plus Jakarta Sans.",
    "fix": "Load the dealt face (the link on the sheet) and put it first in font-family. A build that falls back to a default face lands on the default look."
   },
   {
    "level": "WARN",
    "id": "off-centre",
    "width": 1440,
-   "message": "The margins differ: 74px on the left, 120px on the right, at 1440px.",
+   "message": "The margins differ: 39px on the left, 0px on the right, at 1440px.",
    "fix": "Put the navigation and the content on one pair of margins; check for padding on one side only, a scrollbar gutter, or a header on another inset than the page."
   },
   {
    "level": "WARN",
-   "id": "still-page",
+   "id": "small-title",
    "width": 1440,
-   "message": "Little motion: 13 element(s) moved while the page loaded and scrolled.",
-   "fix": "Give every section an entrance for its parts (not one fade of the whole block) and add one moving picture: a looping clip or a slow move on a photograph."
+   "message": "The h1 is 26px (\"Welcome back\").",
+   "fix": "Set the title at display size, or make the large text of the first screen the h1.",
+   "alsoAt": [
+    768
+   ]
   },
   {
    "level": "WARN",
-   "id": "card-rows",
-   "width": 390,
-   "message": "2 rows of identical boxed cards.",
-   "fix": "Vary the composition; not every section is a card grid."
+   "id": "name-only-title",
+   "width": 1440,
+   "message": "The h1 is a bare name (\"Welcome back\") and nothing else on the first screen says what this is.",
+   "fix": "Keep the name if it leads, and give the line under it (18px or more) the plain words: what it is, for whom, where or when. In the study of 97 Sites of the Day, first screens that named nothing lost usability and content points.",
+   "alsoAt": [
+    768,
+    390
+   ]
+  },
+  {
+   "level": "FAIL",
+   "id": "still-page",
+   "width": 1440,
+   "message": "Only 2 element(s) moved while the page loaded and scrolled.",
+   "fix": "Build the motion layer (SKILL.md step 9, references/motion.md): the signature move, an entrance for the parts of every section, feedback on every control, and one moving picture. Transform and opacity only, with a reduced-motion fallback."
+  },
+  {
+   "level": "FAIL",
+   "id": "focal-point",
+   "width": 768,
+   "message": "The first screen has no dominant element: the largest type is 25.6px (3.3vw) and no single picture holds a third of the viewport.",
+   "fix": "Make one thing lead: the headline at display size, or one large picture. A grid of many small pictures is not one thing; in blind tests jurors marked a first screen without a headline down every time. On the strongest studied sites the largest type has a median of 8.4vw."
   }
  ],
  "images": [

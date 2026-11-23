@@ -105,7 +105,7 @@ function ShareTable({ title, rows, total, isStandard }) {
               <div key={idx} className="an-share-row">
                 {/* Horizontal data bar */}
                 <div className="an-share-bar" style={{ width: `${widthPct}%` }} />
-                <span className="an-share-name">{item.name || item.country || item.referrer || item.device || item.browser || 'Direct / Organic'}</span>
+                <span className="an-share-name">{item.name || item.country || item.referrer || item.deviceType || item.device || item.browser || 'Direct / Organic'}</span>
                 <div className="an-share-stats">
                   <span className="an-share-pct">{pct}%</span>
                   <span className="an-share-count">{count}</span>
@@ -180,8 +180,8 @@ export default function AnalyticsPage() {
         <header className="an-header">
           <div>
             <h1 className="an-title">{shortCode}</h1>
-            <a href={data?.url?.originalUrl} target="_blank" rel="noreferrer" className="an-dest-link">
-              {data?.url?.originalUrl}
+            <a href={data?.originalUrl || data?.url?.originalUrl} target="_blank" rel="noreferrer" className="an-dest-link">
+              {data?.originalUrl || data?.url?.originalUrl || '—'}
               <ExternalLink size={12} />
             </a>
           </div>
@@ -206,19 +206,19 @@ export default function AnalyticsPage() {
         <section className="dash-kpi-row">
           <div className="dash-kpi-item">
             <span className="dash-kpi-label">Total Clicks</span>
-            <span className="dash-kpi-val">{data?.totalClicks || 0}</span>
+            <span className="dash-kpi-val">{data?.totalClicks ?? 0}</span>
           </div>
           <div className="dash-kpi-item">
             <span className="dash-kpi-label">Top Referring Source</span>
-            <span className="dash-kpi-val">{data?.referrerBreakdown?.[0]?.referrer || 'Direct'}</span>
+            <span className="dash-kpi-val">{data?.topReferrers?.[0]?.referrer || (data?.totalClicks > 0 ? 'Direct' : '—')}</span>
           </div>
           <div className="dash-kpi-item">
             <span className="dash-kpi-label">Primary Country</span>
-            <span className="dash-kpi-val">{data?.countryBreakdown?.[0]?.country || 'ID'}</span>
+            <span className="dash-kpi-val">{data?.countryBreakdown?.[0]?.country || (data?.totalClicks > 0 ? 'Unknown' : '—')}</span>
           </div>
           <div className="dash-kpi-item">
             <span className="dash-kpi-label">Dominant Device</span>
-            <span className="dash-kpi-val">{data?.deviceBreakdown?.[0]?.device || 'Desktop'}</span>
+            <span className="dash-kpi-val">{data?.deviceBreakdown?.[0]?.deviceType || data?.deviceBreakdown?.[0]?.device || (data?.totalClicks > 0 ? 'Desktop' : '—')}</span>
           </div>
         </section>
 
@@ -227,7 +227,7 @@ export default function AnalyticsPage() {
           <div className="an-section-head">
             <h2 className="an-section-title">Clickstream Activity Over Time</h2>
           </div>
-          <CleanClickLineChart trendData={data?.clicksTrend} />
+          <CleanClickLineChart trendData={data?.clicksByDay || data?.clicksTrend} />
         </section>
 
         {/* 2 x 2 Share Tables */}
@@ -240,7 +240,7 @@ export default function AnalyticsPage() {
           />
           <ShareTable
             title="Referring Channels"
-            rows={data?.referrerBreakdown}
+            rows={data?.topReferrers || data?.referrerBreakdown}
             total={data?.totalClicks}
             isStandard={isStandard}
           />

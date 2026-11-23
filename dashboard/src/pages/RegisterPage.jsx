@@ -1,23 +1,49 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Image } from 'lucide-react';
 import { registerUser } from '../api/auth';
+import { useToast } from '../context/ToastContext';
 import './AuthPage.css';
 
 export default function RegisterPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const toast = useToast();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+
+    if (password.length < 8) {
+      setError('Password minimal harus 8 karakter.');
+      return;
+    }
+
+    setLoading(true);
+
     try {
       await registerUser(email, password);
+      toast.success('Pendaftaran berhasil! Silakan masuk ke akun Anda.');
       navigate('/login');
     } catch (err) {
-      setError(err.response?.data?.error || 'Registration failed');
+      const status = err.response?.status;
+      const serverMessage = err.response?.data?.error;
+
+      if (status === 409 || serverMessage === 'Email already registered') {
+        setError('Email ini sudah terdaftar. Silakan gunakan email lain atau masuk ke akun Anda.');
+      } else if (status === 400) {
+        setError(serverMessage || 'Email dan password (minimal 8 karakter) wajib diisi.');
+      } else if (status === 429) {
+        setError('Terlalu banyak percobaan pendaftaran. Silakan coba lagi setelah 15 menit.');
+      } else if (!err.response) {
+        setError('Tidak dapat terhubung ke server backend. Pastikan server sedang berjalan.');
+      } else {
+        setError(serverMessage || 'Pendaftaran gagal. Silakan periksa kembali data Anda.');
+      }
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -55,14 +81,15 @@ export default function RegisterPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
+                minLength={8}
                 className="auth-input"
               />
             </div>
 
             {error && <p className="auth-error">{error}</p>}
 
-            <button type="submit" className="auth-submit-btn">
-              Create Account
+            <button type="submit" className="auth-submit-btn" disabled={loading}>
+              {loading ? 'Memproses...' : 'Create Account'}
             </button>
           </form>
 
@@ -73,9 +100,9 @@ export default function RegisterPage() {
         </div>
       </div>
 
-      {/* Right: image placeholder */}
+      {/* Right: image side */}
       <div className="auth-image-side">
-        {<img src="../../public/register.svg" alt="" className="auth-image-fill" />}
+        <img src="/register.svg" alt="Register illustration" className="auth-image-fill" />
       </div>
     </div>
   );

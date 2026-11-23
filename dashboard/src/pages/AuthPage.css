@@ -129,6 +129,11 @@
 .auth-submit-btn:hover { 
   background: #064b68;
 }
+.auth-submit-btn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+  transform: none;
+}
 
 .auth-footer {
   margin-top: 24px;
